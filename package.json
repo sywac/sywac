@@ -1,0 +1,30 @@
+{
+  "name": "sywac",
+  "version": "0.1.0",
+  "description": "So you want a CLI...",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard && tap --cov test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexdrew/sywac.git"
+  },
+  "keywords": [
+    "cli",
+    "parser",
+    "command",
+    "args",
+    "argv"
+  ],
+  "author": "nexdrew",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nexdrew/sywac/issues"
+  },
+  "homepage": "https://github.com/nexdrew/sywac#readme",
+  "devDependencies": {
+    "standard": "^8.6.0",
+    "tap": "^10.1.0"
+  }
+}
