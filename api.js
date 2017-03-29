@@ -97,13 +97,9 @@ class Api {
   // return a Promise<Result>
   parse (args) {
     let context = this.newContext({ utils: this.utils })
-    context.withTypes(this.types.map(type => {
-      return type.toObject()
-    })).slurpArgs(args)
+    context.withTypes(this.types.map(type => type.toObject())).slurpArgs(args)
 
-    let parsePromises = this.types.map(type => {
-      return type.parse(context)
-    })
+    let parsePromises = this.types.map(type => type.parse(context))
 
     return Promise.all(parsePromises).then(whenDone => {
       if (!!this.unknownType) {
