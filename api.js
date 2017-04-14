@@ -17,8 +17,10 @@ class Api {
     this._utils = opts.utils || this._utils
     // lazily configured factory dependencies (expects a function to call per instance)
     this._contextFactory = opts.contextFactory || this._contextFactory
+    this._helpBufferFactory = opts.helpBufferFactory || this._helpBufferFactory
     this._booleanFactory = opts.booleanFactory || this._booleanFactory
     this._stringFactory = opts.stringFactory || this._stringFactory
+    this._numberFactory = opts.numberFactory || this._numberFactory
     // other
     this._name = opts.name || this._name
     return this
@@ -46,14 +48,28 @@ class Api {
     return this._contextFactory(opts)
   }
 
+  newHelpBuffer (opts) {
+    if (typeof this._helpBufferFactory !== 'function') this._helpBufferFactory = require('./buffer').get
+    return this._helpBufferFactory(opts)
+  }
+
   newBoolean (opts) {
     if (typeof this._booleanFactory !== 'function') this._booleanFactory = require('./types/boolean').get
     return this._booleanFactory(opts)
   }
 
+  newHelp (opts) {
+    return require('./types/help').get(opts) // TODO
+  }
+
   newString (opts) {
     if (typeof this._stringFactory !== 'function') this._stringFactory = require('./types/string').get
     return this._stringFactory(opts)
+  }
+
+  newNumber (opts) {
+    if (typeof this._numberFactory !== 'function') this._numberFactory = require('./types/number').get
+    return this._numberFactory(opts)
   }
 
   // API
@@ -87,8 +103,16 @@ class Api {
     return this._addType(flags, opts, 'newBoolean')
   }
 
+  help (flags, opts) {
+    return this._addType(flags, opts, 'newHelp')
+  }
+
   string (flags, opts) {
     return this._addType(flags, opts, 'newString')
+  }
+
+  number (flags, opts) {
+    return this._addType(flags, opts, 'newNumber')
   }
 
   // TODO more types
@@ -96,8 +120,7 @@ class Api {
   // once configured with types, parse and exec asynchronously
   // return a Promise<Result>
   parse (args) {
-    let context = this.newContext({ utils: this.utils })
-    context.withTypes(this.types.map(type => type.toObject())).slurpArgs(args)
+    let context = this.initContext().slurpArgs(args)
 
     let parsePromises = this.types.map(type => type.parse(context))
 
@@ -128,6 +151,19 @@ class Api {
       }
       return context.toResult(types)
     })
+  }
+
+  initContext () {
+    let context = this.newContext({
+      utils: this.utils,
+      helpBuffer: this.newHelpBuffer({ utils: this.utils })
+    })
+    return context.withTypes(this.types.map(type => type.toObject()))
+  }
+
+  // optional convenience methods
+  getHelp (opts) {
+    return this.initContext().addHelp(opts).output
   }
 }
 

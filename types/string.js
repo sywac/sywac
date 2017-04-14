@@ -22,7 +22,6 @@ class TypeString extends Type {
 
   setValue (value) {
     this._value = typeof value === 'boolean' ? '' : value
-    return typeof value !== 'string'
   }
 }
 

@@ -9,6 +9,7 @@ class Context {
     opts = opts || {}
     // dependencies
     this._utils = opts.utils
+    this._helpBuffer = opts.helpBuffer
     // config
     this.types = []
     // args to parse per type
@@ -24,6 +25,11 @@ class Context {
   get utils () {
     if (!this._utils) this._utils = require('./lib/utils').get()
     return this._utils
+  }
+
+  get helpBuffer () {
+    if (!this._helpBuffer) this._helpBuffer = require('./buffer').get()
+    return this._helpBuffer
   }
 
   withTypes (types) {
@@ -105,6 +111,21 @@ class Context {
     })
     if (value) kvArray[kvArray.length - 1].value = value
     return kvArray
+  }
+
+  addHelp (opts) {
+    // populate helpBuffer from types
+    let groups = {}
+    // TODO something about group order here
+    this.types.forEach(type => {
+      groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
+    })
+    // TODO add examples as a group
+    this.helpBuffer.groups = groups
+
+    // add/set output to helpBuffer.toString()
+    this.output = this.helpBuffer.toString(opts)
+    return this
   }
 
   // TODO this seems janky

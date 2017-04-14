@@ -17,6 +17,8 @@ class Type {
     // configurable for help text
     this._flags = opts.flags
     this._desc = opts.description || opts.desc
+    this._hints = opts.hints
+    this._group = opts.group
     // prepare for parsing
     this.reset()
   }
@@ -60,17 +62,37 @@ class Type {
     return this
   }
 
+  desc (d) {
+    return this.description(d)
+  }
+
   get helpDesc () {
     return this._desc
   }
 
+  hints (h) {
+    this._hints = h
+    return this
+  }
+
   get helpHints () {
-    let datatype = this.datatype
-    return datatype ? `[${datatype}]` : '' // TODO this
+    if (typeof this._hints !== 'undefined') return this._hints
+    let hints = []
+    if (this.datatype) hints.push(this.datatype)
+
+    let dv = this._defaultVal
+    if (dv && (!Array.isArray(dv) || dv.length)) hints.push(`default: ${dv}`)
+
+    return hints.length ? '[' + hints.join('] [') + ']' : ''
+  }
+
+  group (g) {
+    this._group = g
+    return this
   }
 
   get helpGroup () {
-    return 'Options:' // TODO this too
+    return this._group || 'Options:'
   }
 
   validateConfig (utils) {
@@ -98,11 +120,11 @@ class Type {
   // + value
   // + positions (key + values?)
   // - required
-  // - helpGroup
+  // + helpGroup
   // + helpKeys: all flagged aliases
   // x helpPlaceholder: all value aliases
   // + helpDesc
-  // - helpHints
+  // + helpHints
   // typeName ?
 
   // resolveSlow () {
@@ -123,28 +145,38 @@ class Type {
   // == parsing ==
   parse (context) {
     // console.log('parse', this.constructor.name)
-    let lookForValueArg = true, set = -2
+    let lastKeyMatchesAlias = false
+    let anyKeyMatchedAlias = false
+    let previousUsedValue
+    // iterate over each slurped arg and determine if its key-value pairs are relevant to this type/option
     context.slurped.forEach(arg => {
-      if (arg.index === (set + 1) && lookForValueArg && arg.parsed.length === 1 && !arg.parsed[0].key && this.isApplicableValue(arg.parsed[0].value)) {
-        this.setValue(arg.parsed[0].value)
+      // if the last key seen applies to this type, see if a keyless value applies as the value
+      // e.g. --key value1 value2 => (1) k=key v=true, (2) k='' v=value1, (3) k='' v=value2
+      //      does value1 apply to key? how about value2?
+      if (lastKeyMatchesAlias && arg.parsed.length === 1 && !arg.parsed[0].key && this.isApplicable(arg.parsed[0].value, previousUsedValue, arg)) {
+        previousUsedValue = arg.parsed[0].value
+        this.setValue(previousUsedValue)
         this.applySource(Type.SOURCE_ARG, arg.index, arg.raw)
         arg.parsed[0].claimed = true
         return
       }
 
       arg.parsed.forEach((kv, kvIndex) => {
-        this.aliases.forEach(alias => {
-          if (alias === kv.key) {
-            lookForValueArg = this.setValue(kv.value) && (alias.length > 1 || kvIndex === arg.parsed.length - 1)
-            if (set !== arg.index) this.applySource(Type.SOURCE_ARG, arg.index, arg.raw)
-            set = arg.index
-            kv.claimed = true
-          }
-        })
+        if (!kv.key) return undefined
+        let matchedAlias = this.aliases.find(alias => alias === kv.key)
+        lastKeyMatchesAlias = !!matchedAlias
+        if (matchedAlias) {
+          anyKeyMatchedAlias = true
+          this.observeAlias(matchedAlias)
+          previousUsedValue = kv.value
+          this.setValue(previousUsedValue) // TODO pass isExplicit arg ? or first check if isValid(value) ?
+          this.applySource(Type.SOURCE_ARG, arg.index, arg.raw)
+          kv.claimed = true
+        }
       })
     })
 
-    if (set === -2) {
+    if (!anyKeyMatchedAlias) {
       this.setValue(this.defaultVal)
       this._source = Type.SOURCE_DEFAULT
     }
@@ -164,13 +196,17 @@ class Type {
     this._addRaw(raw)
   }
 
-  isApplicableValue (value) {
-    return true
+  isApplicable (currentValue, previousValue, slurpedArg) {
+    // assumes (1) this type should hold a single value
+    // and (2) a non-string previous value was not explicit
+    // e.g. previous was not --key=value
+    return typeof previousValue !== 'string'
   }
+
+  observeAlias (alias) {}
 
   setValue (value) {
     this._value = value
-    return true
   }
 
   // == after parsing ==
@@ -200,7 +236,14 @@ class Type {
 
   reset () {
     this._value = this._defaultVal
-    this._source = Type.SOURCE_DEFAULT // e.g. arg, env, configfile
+    this._source = Type.SOURCE_DEFAULT
+    // source precedence, most to least direct (for future reference):
+    // 1. prompt (interactive mode only)
+    // 2. arg
+    // 3. stdin
+    // 4. env
+    // 5. configfile
+    // 6. default
     this._position = []
     this._raw = []
   }

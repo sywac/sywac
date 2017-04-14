@@ -8,22 +8,15 @@ class TypeBoolean extends Type {
   }
 
   constructor (opts) {
-    super(Object.assign({
-      defaultValue: false
-    }, opts))
+    super(Object.assign({ defaultValue: false }, opts))
   }
 
   get datatype () {
     return 'boolean'
   }
 
-  isApplicableValue (value) {
-    return typeof value === 'boolean' || value === 'true' || value === 'false'
-  }
-
   setValue (value) {
     this._value = typeof value === 'boolean' ? value : value === 'true'
-    return typeof value !== 'string'
   }
 }
 
