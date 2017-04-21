@@ -21,6 +21,8 @@ class Api {
     this._booleanFactory = opts.booleanFactory || this._booleanFactory
     this._stringFactory = opts.stringFactory || this._stringFactory
     this._numberFactory = opts.numberFactory || this._numberFactory
+    this._helpTypeFactory = opts.helpTypeFactory || this._helpTypeFactory
+    this._arrayFactory = opts.arrayFactory || this._arrayFactory
     // other
     this._name = opts.name || this._name
     return this
@@ -58,10 +60,6 @@ class Api {
     return this._booleanFactory(opts)
   }
 
-  newHelp (opts) {
-    return require('./types/help').get(opts) // TODO
-  }
-
   newString (opts) {
     if (typeof this._stringFactory !== 'function') this._stringFactory = require('./types/string').get
     return this._stringFactory(opts)
@@ -70,6 +68,16 @@ class Api {
   newNumber (opts) {
     if (typeof this._numberFactory !== 'function') this._numberFactory = require('./types/number').get
     return this._numberFactory(opts)
+  }
+
+  newHelp (opts) {
+    if (typeof this._helpTypeFactory !== 'function') this._helpTypeFactory = require('./types/help').get
+    return this._helpTypeFactory(opts)
+  }
+
+  newArray (opts) {
+    if (typeof this._arrayFactory !== 'function') this._arrayFactory = require('./types/array').get
+    return this._arrayFactory(opts)
   }
 
   // API
@@ -99,12 +107,9 @@ class Api {
     return this.custom(this[factoryMethodName](opts))
   }
 
+  // common individual value types
   boolean (flags, opts) {
     return this._addType(flags, opts, 'newBoolean')
-  }
-
-  help (flags, opts) {
-    return this._addType(flags, opts, 'newHelp')
   }
 
   string (flags, opts) {
@@ -113,6 +118,31 @@ class Api {
 
   number (flags, opts) {
     return this._addType(flags, opts, 'newNumber')
+  }
+
+  // specialty types
+  help (flags, opts) {
+    return this._addType(flags, opts, 'newHelp')
+  }
+
+  // multiple value types
+  array (flags, opts) {
+    return this._addType(flags, opts, 'newArray')
+  }
+
+  _addArray (flags, opts, subtypeFactoryMethodName) {
+    opts = opts || {}
+    if (!Array.isArray(flags) && typeof flags === 'object') opts = flags
+    opts.elementType = this[subtypeFactoryMethodName](opts)
+    return this.array(flags, opts)
+  }
+
+  stringArray (flags, opts) {
+    return this._addArray(flags, opts, 'newString')
+  }
+
+  numberArray (flags, opts) {
+    return this._addArray(flags, opts, 'newNumber')
   }
 
   // TODO more types
