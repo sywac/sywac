@@ -1,8 +1,8 @@
 'use strict'
 
-const Type = require('./type')
+const TypeWrapper = require('./wrapper')
 
-class TypeArray extends Type {
+class TypeArray extends TypeWrapper {
   static get (opts) {
     return new TypeArray(opts)
   }
@@ -10,7 +10,7 @@ class TypeArray extends Type {
   constructor (opts) {
     opts = opts || {}
     super(Object.assign({ defaultValue: [] }, opts))
-    this._elementType = opts.elementType || opts.of
+    // this._elementType = opts.elementType || opts.of
 
     if ('delimiter' in opts) this._delim = opts.delimiter
     else if ('delim' in opts) this._delim = opts.delim
@@ -18,16 +18,6 @@ class TypeArray extends Type {
 
     if ('cumulative' in opts) this._cumulative = opts.cumulative
     else this._cumulative = true
-  }
-
-  of (subtype) {
-    this._elementType = subtype
-    return this
-  }
-
-  get elementType () {
-    if (!this._elementType) this._elementType = require('./string').get()
-    return this._elementType
   }
 
   delimiter (d) {
@@ -84,6 +74,7 @@ class TypeArray extends Type {
   }
 
   setValue (value) {
+    // console.log('array.js > setValue:', value, 'for', this.helpFlags)
     if (Array.isArray(value)) {
       this._value = (this._value || []).concat(value)
       return
@@ -98,10 +89,12 @@ class TypeArray extends Type {
   addValue (value) {
     this.elementType.setValue(value)
     if (!this._value) this._value = []
+    // if (!this._value || !Array.isArray(this._value)) this._value = []
     let elementValue = this.elementType.value
     if (Array.isArray(elementValue) && this._value.length && this._value[this._value.length - 1] === elementValue) {
       return // we already have elementValue, it's just been modified
     }
+    // console.log('array.js > this._value:', this._value)
     this._value.push(elementValue)
   }
 

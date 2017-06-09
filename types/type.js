@@ -5,15 +5,20 @@ class Type {
     return 'default'
   }
 
-  static get SOURCE_ARG () {
-    return 'arg'
+  static get SOURCE_FLAG () {
+    return 'flag'
+  }
+
+  static get SOURCE_POSITIONAL () {
+    return 'positional'
   }
 
   constructor (opts) {
     opts = opts || {}
     // configurable for parsing
-    this._aliases = !!opts.aliases ? [].concat(opts.aliases) : []
+    this._aliases = opts.aliases ? [].concat(opts.aliases) : []
     this._defaultVal = opts.defaultValue
+    this._required = opts.required
     // configurable for help text
     this._flags = opts.flags
     this._desc = opts.description || opts.desc
@@ -46,6 +51,15 @@ class Type {
 
   get defaultVal () {
     return this._defaultVal
+  }
+
+  required (r) {
+    this._required = r
+    return this
+  }
+
+  get isRequired () {
+    return !!this._required
   }
 
   flags (f) {
@@ -129,22 +143,25 @@ class Type {
 
   // resolveSlow () {
   //   let self = this
+  //   let timeout = Math.floor(Math.random() * 500)
+  //   console.log('resolving %s in %d ms', self.constructor.name, timeout)
   //   return new Promise((resolve, reject) => {
   //     setTimeout(() => {
   //       console.log('resolve', self.constructor.name)
   //       resolve(self)
-  //     }, 500)
+  //     }, timeout)
   //   })
   // }
 
   resolve () {
     // console.log('resolve', this.constructor.name)
     return Promise.resolve(this)
+    // return this.resolveSlow()
   }
 
-  // == parsing ==
+  // async parsing
   parse (context) {
-    // console.log('parse', this.constructor.name)
+    // console.log('parse', this.constructor.name, this.helpFlags)
     let lastKeyMatchesAlias = false
     let anyKeyMatchedAlias = false
     let previousUsedValue
@@ -156,7 +173,7 @@ class Type {
       if (lastKeyMatchesAlias && arg.parsed.length === 1 && !arg.parsed[0].key && this.isApplicable(arg.parsed[0].value, previousUsedValue, arg)) {
         previousUsedValue = arg.parsed[0].value
         this.setValue(previousUsedValue)
-        this.applySource(Type.SOURCE_ARG, arg.index, arg.raw)
+        this.applySource(Type.SOURCE_FLAG, arg.index, arg.raw)
         arg.parsed[0].claimed = true
         return
       }
@@ -170,7 +187,7 @@ class Type {
           this.observeAlias(matchedAlias)
           previousUsedValue = kv.value
           this.setValue(previousUsedValue) // TODO pass isExplicit arg ? or first check if isValid(value) ?
-          this.applySource(Type.SOURCE_ARG, arg.index, arg.raw)
+          this.applySource(Type.SOURCE_FLAG, arg.index, arg.raw)
           kv.claimed = true
         }
       })
@@ -181,11 +198,18 @@ class Type {
       this._source = Type.SOURCE_DEFAULT
     }
 
+    return this.validateParsed(context)
+  }
+
+  // async validation called from parse
+  validateParsed (context) {
+    // TODO do validation here, add any errors to context
+    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) console.log('Missing required arg:', this.aliases)
     return this.resolve()
   }
 
+  // async hook to execute after all parsing
   postParse (context) {
-    // TODO do type-specific validation here ??
     // console.log('postParse', this.constructor.name)
     return this.resolve()
   }
@@ -254,6 +278,7 @@ class Type {
       aliases: this.aliases,
       datatype: this.datatype,
       defaultVal: this.defaultVal,
+      isRequired: this.isRequired,
       helpFlags: this.helpFlags,
       helpDesc: this.helpDesc,
       helpHints: this.helpHints,
@@ -267,6 +292,7 @@ class Type {
   }
 
   toResult () {
+    // console.log('toResult', this.constructor.name, this.helpFlags)
     return {
       // populated via config
       aliases: this.aliases,
