@@ -13,10 +13,10 @@ class Buffer {
     this._indent = opts.indent || this._pad + this._pad
     this._split = opts.split || /\s/g // note that global is needed for the chunk method and doesn't affect split() usage
     // stuff
-    this._icon = opts.icon || ''     //think alain
-    this._slogan = opts.slogan || '' //"Need a product name? Ask alain!"
-    this._usage = opts.usage || ''   //"Usage: $0 [options] <command>"
-    this._groups = opts.groups || {} //Commands, Options, Examples
+    this._icon = opts.icon || ''     // think alain
+    this._slogan = opts.slogan || '' // "Need a product name? Ask alain!"
+    this._usage = opts.usage || ''   // "Usage: $0 [options] <command>"
+    this._groups = opts.groups || {} // Commands, Options, Examples
     this._groupOrder = opts.groupOrder || []
     // each group keyed by heading
     // with a value of array<types>
@@ -24,7 +24,7 @@ class Buffer {
     // - flags with or without placeholder
     // - description
     // - hints
-    this._epilogue = opts.epilogue || '' //"See alainasaservice.com for more details"
+    this._epilogue = opts.epilogue || '' // "See alainasaservice.com for more details"
     this._error = opts.error
     this._errorMsg = opts.errorMsg || ''
     this._maxWidth = opts.maxWidth || Math.min(process.stdout.columns || 100, 100)
@@ -107,10 +107,10 @@ class Buffer {
       includeEpilogue: true
     }, opts)
     let str = this.appendSection('', !!opts.includePreface && this.icon, this.sectionSep)
-    if (!!opts.includePreface) str = this.appendSection(str, this.slogan, this.sectionSep)
-    if (!!opts.includeUsage) str = this.appendSection(str, this.usage, this.sectionSep)
-    if (!!opts.includeGroups) str = this.appendSection(str, this.groupsContent(), this.sectionSep)
-    if (!!opts.includeEpilogue) str = this.appendSection(str, this.epilogue, this.sectionSep)
+    if (opts.includePreface) str = this.appendSection(str, this.slogan, this.sectionSep)
+    if (opts.includeUsage) str = this.appendSection(str, this.usage, this.sectionSep)
+    if (opts.includeGroups) str = this.appendSection(str, this.groupsContent(), this.sectionSep)
+    if (opts.includeEpilogue) str = this.appendSection(str, this.epilogue, this.sectionSep)
     return str
   }
 
@@ -121,7 +121,7 @@ class Buffer {
     if (!order || !order.length) order = Object.keys(groupsLeft)
     let types
     order.forEach(heading => {
-      types = groupsLeft[heading] //array of types
+      types = groupsLeft[heading] // array of types
       if (!types || !types.length) {
         delete groupsLeft[heading]
         return undefined
@@ -150,7 +150,7 @@ class Buffer {
       delete groupsLeft[heading]
     })
     Object.keys(groupsLeft).forEach(heading => {
-      //TODO ditto
+      // TODO ditto
     })
     return str
   }
@@ -162,12 +162,16 @@ class Buffer {
     if (!order || !order.length) order = Object.keys(groupsLeft)
     let types
     order.forEach(heading => {
-      types = groupsLeft[heading] //array of types
+      types = groupsLeft[heading] // array of types
       if (!types || !types.length) {
         delete groupsLeft[heading]
         return undefined
       }
-      let flagsWidth = 0, descWidth = 0, hintsWidth = 0, minHintsWidth = 0, hintsNoAnsi
+      let flagsWidth = 0
+      let descWidth = 0
+      let hintsWidth = 0
+      let minHintsWidth = 0
+      let hintsNoAnsi
       types.forEach(type => {
         if (type.hidden) return undefined
         if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
@@ -207,7 +211,7 @@ class Buffer {
       delete groupsLeft[heading]
     })
     Object.keys(groupsLeft).forEach(heading => {
-      //TODO ditto
+      // TODO ditto
     })
     return str
   }

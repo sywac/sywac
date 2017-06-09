@@ -17,7 +17,11 @@ class TypeHelp extends TypeBoolean {
   }
 
   postParse (context) {
-    if (this.value) context.addHelp() // TODO pass opts
+    // console.log('postParse', this.constructor.name)
+    if (this.value) {
+      // TODO clear any validation errors (from parsing) in context, if necessary
+      context.addHelp() // TODO pass opts to addHelp
+    }
     return super.resolve()
   }
 }

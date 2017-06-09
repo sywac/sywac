@@ -20,6 +20,7 @@ class Context {
     this.output = ''
     this.argv = {}
     this.details = { args: [], types: [] }
+    // this.errors = []
   }
 
   get utils () {
@@ -42,7 +43,9 @@ class Context {
     if (typeof args === 'string') args = this.utils.stringToArgs(args)
     if (!Array.isArray(args)) args = [].concat(args)
     // TODO read from stdin with no args? based on config?
-    let parseable = [], extra = [], isExtra = false
+    let parseable = []
+    let extra = []
+    let isExtra = false
     for (let i = 0, len = args.length, arg; i < len; i++) {
       arg = String(args[i])
       if (arg === '--') {

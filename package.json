@@ -4,6 +4,7 @@
   "description": "So you want a CLI...",
   "main": "index.js",
   "scripts": {
+    "lint": "standard",
     "test": "standard && tap --cov test/*.js"
   },
   "repository": {

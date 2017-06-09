@@ -11,9 +11,9 @@ class TypeNumber extends Type {
     return new TypeNumber(opts)
   }
 
-  constructor (opts) {
-    super(opts)
-  }
+  // constructor (opts) {
+  //   super(opts)
+  // }
 
   get datatype () {
     return 'number'
@@ -21,7 +21,7 @@ class TypeNumber extends Type {
 
   get value () {
     if (typeof this._value === 'undefined' || this._value === null) return this._value
-    return TypeNumber.isNumber(this._value) ?  Number(this._value) : NaN
+    return TypeNumber.isNumber(this._value) ? Number(this._value) : NaN
   }
 
   setValue (value) {

@@ -7,9 +7,9 @@ class TypeString extends Type {
     return new TypeString(opts)
   }
 
-  constructor (opts) {
-    super(opts)
-  }
+  // constructor (opts) {
+  //   super(opts)
+  // }
 
   get datatype () {
     return 'string'
@@ -21,6 +21,7 @@ class TypeString extends Type {
   }
 
   setValue (value) {
+    // console.log('string.js > setValue:', value)
     this._value = typeof value === 'boolean' ? '' : value
   }
 }
