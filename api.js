@@ -152,16 +152,44 @@ class Api {
   positional (dsl, opts) {
     opts = opts || {}
 
-    if (Array.isArray(dsl)) opts.params = dsl
-    else if (typeof dsl === 'object') opts = dsl
-    else if (typeof dsl === 'string') {
-      // TODO parse dsl string and populate opts.params
+    if (Array.isArray(dsl)) {
+      opts.params = dsl
+    } else if (typeof dsl === 'object') {
+      opts = dsl
+    } else if (typeof dsl === 'string') {
+      opts.params = this.utils.stringToMultiPositional(dsl)
     }
 
-    // TODO iterate over opts.params and add positional for each
-    // for each param, (1) get elementType via _getType,
-    // (2) get positional via this.get('positional', opts),
-    // (3) add to unknownType, (4) add to custom/types
+    opts.ignore = [].concat(opts.ignore).filter(Boolean) // guarantee array
+
+    let params = Array.isArray(opts.params) ? opts.params : Object.keys(opts.params).map(key => {
+      let obj = opts.params[key]
+      if (obj && !obj.flags) obj.flags = key
+      return obj
+    })
+    // console.log('!!!\n', params, '\n!!!')
+    params.forEach(param => {
+      // accept an array of strings or objects
+      if (typeof param === 'string' && param.length) param = { flags: param }
+
+      // allow "commentary" things in positional dsl string via opts.ignore
+      if (!param || ~opts.ignore.indexOf(param.flags)) return
+
+      // TODO if no flags or aliases, throw error
+
+      // allow some opts to be defined once and apply to all params
+      if (!param.group && opts.group) param.group = opts.group
+      if (!('hints' in param) && 'hints' in opts) param.hints = opts.hints
+
+      let positionalFlags = param.flags
+      delete param.flags
+      param = Object.assign(this.utils.inferPositionalProperties(positionalFlags, Object.keys(this._factories)), param)
+      if (!param.elementType) param.elementType = this._getType(param)
+      param.flags = positionalFlags
+      let positional = this.get('positional', param)
+      if (this.unknownType) this.unknownType.addPositional(positional)
+      this.custom(positional)
+    })
 
     return this
   }
@@ -188,7 +216,8 @@ class Api {
   }
 
   _addType (flags, opts, name) {
-    opts = this._normalizeOpts(flags, opts)
+    return this.custom(this._getType(flags, opts, name))
+    /*opts = this._normalizeOpts(flags, opts)
 
     let typeObject
     name = String(name || opts.type)
@@ -200,6 +229,20 @@ class Api {
 
     // return this.custom(factoryMethod.call(this, opts))
     return this.custom(typeObject || this.get(name, opts))
+    */
+  }
+
+  _getType (flags, opts, name) {
+    opts = this._normalizeOpts(flags, opts)
+
+    name = String(name || opts.type)
+    if (name.indexOf(':') !== -1) {
+      let types = name.split(':').filter(Boolean)
+      if (types[0] === 'array') return this._getArrayType(flags, opts, types.slice(1).join(':') || 'string')
+      name = types[0]
+    }
+
+    return this.get(name, opts)
   }
 
   _getArrayType (flags, opts, subtypeName) {
