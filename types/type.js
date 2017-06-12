@@ -89,7 +89,8 @@ class Type {
   }
 
   get helpDesc () {
-    return this._desc
+    // if this isn't a string, it can mess up buffer.js logic
+    return typeof this._desc === 'string' ? this._desc : ''
   }
 
   hints (h) {

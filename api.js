@@ -7,6 +7,7 @@ class Api {
 
   constructor (opts) {
     this.types = []
+    this._helpOpts = {}
     this._factories = {
       context: this.getContext,
       helpBuffer: this.getHelpBuffer,
@@ -45,6 +46,10 @@ class Api {
   get utils () {
     if (!this._utils) this._utils = require('./lib/utils').get()
     return this._utils
+  }
+
+  get helpOpts () {
+    return this._helpOpts
   }
 
   get name () {
@@ -97,7 +102,7 @@ class Api {
 
   // API
   usage (usage) {
-    // TODO this!
+    if (usage) this.helpOpts.usage = usage
     return this
   }
 
@@ -110,6 +115,7 @@ class Api {
     } else if (typeof dsl === 'object') {
       opts = dsl
     } else if (typeof dsl === 'string') {
+      if (!this.helpOpts.usage) this.helpOpts.usage = dsl
       let array = this.utils.stringToMultiPositional(dsl)
       if (!opts.params) {
         opts.params = array
@@ -135,19 +141,20 @@ class Api {
       return obj
     })
     // console.log('!!!\n', params, '\n!!!')
+    let numSkipped = 0
     params.forEach((param, index) => {
       // accept an array of strings or objects
       if (typeof param === 'string' && param.length) param = { flags: param }
       if (!param.flags && param.aliases) param.flags = [].concat(param.aliases)[0]
 
       // allow "commentary" things in positional dsl string via opts.ignore
-      if (!param || ~opts.ignore.indexOf(param.flags)) return
+      if (!param || ~opts.ignore.indexOf(param.flags)) return numSkipped++
 
       // TODO if no flags or aliases, throw error
 
       // convenience to define descriptions in opts
       if (!(param.description || param.desc) && (opts.description || opts.desc)) {
-        param.desc = [].concat(opts.description || opts.desc)[index]
+        param.desc = [].concat(opts.description || opts.desc)[index - numSkipped]
       }
 
       let positionalFlags = param.flags
@@ -285,9 +292,11 @@ class Api {
   }
 
   initContext () {
+    let helpOpts = Object.assign({ utils: this.utils }, this.helpOpts)
+    if (typeof helpOpts.usage === 'string') helpOpts.usage = helpOpts.usage.replace('$0', this.name)
     let context = this.get('context', {
       utils: this.utils,
-      helpBuffer: this.get('helpBuffer', { utils: this.utils })
+      helpBuffer: this.get('helpBuffer', helpOpts)
     })
     return context.withTypes(this.types.map(type => type.toObject()))
   }
