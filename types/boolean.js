@@ -15,6 +15,10 @@ class TypeBoolean extends Type {
     return 'boolean'
   }
 
+  isApplicable (currentValue, previousValue, slurpedArg) {
+    return typeof currentValue === 'boolean' || currentValue === 'true' || currentValue === 'false'
+  }
+
   setValue (value) {
     this._value = typeof value === 'boolean' ? value : value === 'true'
   }
