@@ -130,7 +130,7 @@ class Buffer {
       // first determine width needed for all flags
       let flagsWidth = 0
       types.forEach(type => {
-        if (type.hidden) return undefined
+        if (type.isHidden) return undefined
         if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
       })
 
@@ -173,7 +173,7 @@ class Buffer {
       let minHintsWidth = 0
       let hintsNoAnsi
       types.forEach(type => {
-        if (type.hidden) return undefined
+        if (type.isHidden) return undefined
         if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
         if (type.helpDesc) descWidth = Math.max(descWidth, this.utils.stripAnsi(type.helpDesc).length)
         // TODO perhaps helpHints should be an array ??
@@ -221,7 +221,7 @@ class Buffer {
   }
 
   appendTypeSimple (str, type, flagsWidth) {
-    if (type.hidden || (!type.helpFlags && !type.helpDesc && !type.helpHints)) return str
+    if (type.isHidden || (!type.helpFlags && !type.helpDesc && !type.helpHints)) return str
 
     let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
     let flag = type.helpFlags
@@ -294,7 +294,7 @@ class Buffer {
   }
 
   appendType (str, type, flagsWidth, descWidth, hintsWidth) {
-    if (type.hidden || (!type.helpFlags && !type.helpDesc && !type.helpHints)) return str
+    if (type.isHidden || (!type.helpFlags && !type.helpDesc && !type.helpHints)) return str
     let flag = type.helpFlags
 
     // split desc and hint into array of chunks <= width

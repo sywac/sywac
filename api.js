@@ -26,19 +26,11 @@ class Api {
     this._unknownType = opts.unknownType || this._unknownType
     this._utils = opts.utils || this._utils
 
+    // lazily configured factory dependencies (expects a function to call per instance)
     if ('factories' in opts) {
       Object.keys(opts.factories).forEach(name => this.registerFactory(name, opts.factories[name]))
     }
 
-    // lazily configured factory dependencies (expects a function to call per instance)
-    // this._contextFactory = opts.contextFactory || this._contextFactory
-    // this._helpBufferFactory = opts.helpBufferFactory || this._helpBufferFactory
-    // this._booleanFactory = opts.booleanFactory || this._booleanFactory
-    // this._stringFactory = opts.stringFactory || this._stringFactory
-    // this._numberFactory = opts.numberFactory || this._numberFactory
-    // this._helpTypeFactory = opts.helpTypeFactory || this._helpTypeFactory
-    // this._arrayFactory = opts.arrayFactory || this._arrayFactory
-    // this._positionalFactory = opts.positionalFactory || this._positionalFactory
     // other
     this._name = opts.name || this._name
     return this
@@ -60,6 +52,7 @@ class Api {
     return this._name
   }
 
+  // type factories
   registerFactory (name, factory) {
     if (name && typeof factory === 'function') this._factories[name] = factory
     return this
@@ -102,47 +95,6 @@ class Api {
     return require('./types/positional').get(opts)
   }
 
-  // factory wrapper methods
-  // newContext (opts) {
-  //   if (typeof this._contextFactory !== 'function') this._contextFactory = require('./context').get
-  //   return this._contextFactory(opts)
-  // }
-
-  // newHelpBuffer (opts) {
-  //   if (typeof this._helpBufferFactory !== 'function') this._helpBufferFactory = require('./buffer').get
-  //   return this._helpBufferFactory(opts)
-  // }
-
-  // newBoolean (opts) {
-  //   if (typeof this._booleanFactory !== 'function') this._booleanFactory = require('./types/boolean').get
-  //   return this._booleanFactory(opts)
-  // }
-
-  // newString (opts) {
-  //   if (typeof this._stringFactory !== 'function') this._stringFactory = require('./types/string').get
-  //   return this._stringFactory(opts)
-  // }
-
-  // newNumber (opts) {
-  //   if (typeof this._numberFactory !== 'function') this._numberFactory = require('./types/number').get
-  //   return this._numberFactory(opts)
-  // }
-
-  // newHelp (opts) {
-  //   if (typeof this._helpTypeFactory !== 'function') this._helpTypeFactory = require('./types/help').get
-  //   return this._helpTypeFactory(opts)
-  // }
-
-  // newArray (opts) {
-  //   if (typeof this._arrayFactory !== 'function') this._arrayFactory = require('./types/array').get
-  //   return this._arrayFactory(opts)
-  // }
-
-  // newPositional (opts) {
-  //   if (typeof this._positionalFactory !== 'function') this._positionalFactory = require('./types/positional').get
-  //   return this._positionalFactory(opts)
-  // }
-
   // API
   usage (usage) {
     // TODO this!
@@ -152,12 +104,27 @@ class Api {
   positional (dsl, opts) {
     opts = opts || {}
 
+    // TODO this logic is repetitive and messy
     if (Array.isArray(dsl)) {
       opts.params = dsl
     } else if (typeof dsl === 'object') {
       opts = dsl
     } else if (typeof dsl === 'string') {
-      opts.params = this.utils.stringToMultiPositional(dsl)
+      let array = this.utils.stringToMultiPositional(dsl)
+      if (!opts.params) {
+        opts.params = array
+      } else if (Array.isArray(opts.params)) {
+        opts.params = array.map((string, index) => {
+          return opts.params[index] ? Object.assign({ flags: string }, opts.params[index]) : string
+        })
+      } else {
+        opts.params = Object.keys(opts.params).map((key, index) => {
+          let obj = opts.params[key]
+          if (obj && !obj.flags) obj.flags = array[index]
+          // if (obj && !obj.aliases) obj.aliases = key
+          return obj
+        })
+      }
     }
 
     opts.ignore = [].concat(opts.ignore).filter(Boolean) // guarantee array
@@ -168,25 +135,27 @@ class Api {
       return obj
     })
     // console.log('!!!\n', params, '\n!!!')
-    params.forEach(param => {
+    params.forEach((param, index) => {
       // accept an array of strings or objects
       if (typeof param === 'string' && param.length) param = { flags: param }
+      if (!param.flags && param.aliases) param.flags = [].concat(param.aliases)[0]
 
       // allow "commentary" things in positional dsl string via opts.ignore
       if (!param || ~opts.ignore.indexOf(param.flags)) return
 
       // TODO if no flags or aliases, throw error
 
-      // allow some opts to be defined once and apply to all params
-      if (!param.group && opts.group) param.group = opts.group
-      if (!('hints' in param) && 'hints' in opts) param.hints = opts.hints
+      // convenience to define descriptions in opts
+      if (!(param.description || param.desc) && (opts.description || opts.desc)) {
+        param.desc = [].concat(opts.description || opts.desc)[index]
+      }
 
       let positionalFlags = param.flags
       delete param.flags
       param = Object.assign(this.utils.inferPositionalProperties(positionalFlags, Object.keys(this._factories)), param)
-      if (!param.elementType) param.elementType = this._getType(param)
+      if (!param.elementType) param.elementType = this._getType(param).configure(opts, false)
       param.flags = positionalFlags
-      let positional = this.get('positional', param)
+      let positional = this.get('positional', param).configure(opts, false)
       if (this.unknownType) this.unknownType.addPositional(positional)
       this.custom(positional)
     })
@@ -217,19 +186,6 @@ class Api {
 
   _addType (flags, opts, name) {
     return this.custom(this._getType(flags, opts, name))
-    /*opts = this._normalizeOpts(flags, opts)
-
-    let typeObject
-    name = String(name || opts.type)
-    if (name.indexOf(':') !== -1) {
-      let types = name.split(':').filter(Boolean)
-      if (types[0] === 'array') typeObject = this._getArrayType(flags, opts, types.slice(1).join(':') || 'string')
-      else name = types[0]
-    }
-
-    // return this.custom(factoryMethod.call(this, opts))
-    return this.custom(typeObject || this.get(name, opts))
-    */
   }
 
   _getType (flags, opts, name) {
@@ -290,46 +246,13 @@ class Api {
     return this._addType(flags, opts, 'array')
   }
 
-  /*
-  _addArray (flags, opts, subtypeName) {
-    opts = opts || {}
-    if (!Array.isArray(flags) && typeof flags === 'object') opts = flags
-
-    // subtypeName = String(subtypeName || opts.type)
-    // if (subtypeName.indexOf(':') !== -1) {
-    //   let types = subtypeName.split(':').filter(Boolean)
-    //   if (types[0] === 'array') return this._addArray(flags, opts, types.slice(1).join(':') || 'string')
-    // }
-
-    // opts.elementType = subtypeFactoryMethod.call(this, opts)
-    opts.elementType = this.get(subtypeName, opts)
-    return this.array(flags, opts)
-  }
-  */
-
   stringArray (flags, opts) {
-    // return this._addArray(flags, opts, 'string')
     return this._addType(flags, opts, 'array:string')
   }
 
   numberArray (flags, opts) {
-    // return this._addArray(flags, opts, 'number')
     return this._addType(flags, opts, 'array:number')
   }
-
-  /*
-  _addPositional (opts, subtypeName) {
-    opts = opts || {}
-    // opts.elementType = this[subtypeFactoryMethodName](opts)
-    // opts.elementType = this._factories[subtype].call(this, opts)
-    opts.elementType = this.get(subtypeName, opts)
-    // let positional = this.newPositional(opts)
-    // let positional = this._factories.positional.call(this, opts)
-    let positional = this.get('positional', opts)
-    if (this.unknownType) this.unknownType.addPositional(positional)
-    return this.custom(positional)
-  }
-  */
 
   // TODO more types
 

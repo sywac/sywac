@@ -8,16 +8,22 @@ class TypeArray extends TypeWrapper {
   }
 
   constructor (opts) {
+    super(Object.assign({ defaultValue: [], delim: ',', cumulative: true }, opts || {}))
+  }
+
+  configure (opts, override) {
     opts = opts || {}
-    super(Object.assign({ defaultValue: [] }, opts))
-    // this._elementType = opts.elementType || opts.of
+    if (typeof override === 'undefined') override = true
+    super.configure(opts, override)
 
-    if ('delimiter' in opts) this._delim = opts.delimiter
-    else if ('delim' in opts) this._delim = opts.delim
-    else this._delim = ','
+    if (override || typeof this._delim === 'undefined') {
+      if ('delimiter' in opts) this._delim = opts.delimiter
+      else if ('delim' in opts) this._delim = opts.delim
+    }
 
-    if ('cumulative' in opts) this._cumulative = opts.cumulative
-    else this._cumulative = true
+    if (override || typeof this._cumulative === 'undefined') this._cumulative = 'cumulative' in opts ? opts.cumulative : this._cumulative
+
+    return this
   }
 
   delimiter (d) {

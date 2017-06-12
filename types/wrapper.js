@@ -3,10 +3,14 @@
 const Type = require('./type')
 
 class TypeWrapper extends Type {
-  constructor (opts) {
+  configure (opts, override) {
     opts = opts || {}
-    super(opts)
-    this._elementType = opts.elementType || opts.of
+    if (typeof override === 'undefined') override = true
+    super.configure(opts, override)
+
+    if (override || !this._elementType) this._elementType = opts.elementType || opts.of || this._elementType
+
+    return this
   }
 
   of (subtype) {

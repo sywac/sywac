@@ -8,11 +8,19 @@ class TypePositional extends TypeWrapper {
   }
 
   constructor (opts) {
-    opts = opts || {}
-    super(opts)
-    if ('acceptFlags' in opts) this.acceptFlags = opts.acceptFlags
+    super(Object.assign({ acceptFlags: false, variadic: false }, opts || {}))
     // TODO flags in positional and flags in elementType should be different
-    this._variadic = opts.variadic
+  }
+
+  configure (opts, override) {
+    opts = opts || {}
+    if (typeof override === 'undefined') override = true
+    super.configure(opts, override)
+
+    if (override || typeof this.acceptFlags === 'undefined') this.acceptFlags = 'acceptFlags' in opts ? opts.acceptFlags : this.acceptFlags
+    if (override || typeof this._variadic === 'undefined') this._variadic = 'variadic' in opts ? opts.variadic : this._variadic
+
+    return this
   }
 
   get isVariadic () {

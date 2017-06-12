@@ -14,18 +14,26 @@ class Type {
   }
 
   constructor (opts) {
-    opts = opts || {}
-    // configurable for parsing
-    this._aliases = opts.aliases ? [].concat(opts.aliases) : []
-    this._defaultVal = opts.defaultValue
-    this._required = opts.required
-    // configurable for help text
-    this._flags = opts.flags
-    this._desc = opts.description || opts.desc
-    this._hints = opts.hints
-    this._group = opts.group
+    this._aliases = []
+    this.configure(opts, true)
     // prepare for parsing
     this.reset()
+  }
+
+  configure (opts, override) {
+    opts = opts || {}
+    if (typeof override === 'undefined') override = true
+    // configurable for parsing
+    if (override || !this._aliases.length) this._aliases = opts.aliases ? (this._aliases || []).concat(opts.aliases) : this._aliases
+    if (override || typeof this._defaultVal === 'undefined') this._defaultVal = 'defaultValue' in opts ? opts.defaultValue : this._defaultVal
+    if (override || typeof this._required === 'undefined') this._required = 'required' in opts ? opts.required : this._required
+    // configurable for help text
+    if (override || !this._flags) this._flags = opts.flags || this._flags
+    if (override || !this._desc) this._desc = opts.description || opts.desc || this._desc
+    if (override || typeof this._hints === 'undefined') this._hints = 'hints' in opts ? opts.hints : this._hints
+    if (override || !this._group) this._group = opts.group || this._group
+    if (override || typeof this._hidden === 'undefined') this._hidden = 'hidden' in opts ? opts.hidden : this._hidden
+    return this
   }
 
   get datatype () {
@@ -107,6 +115,15 @@ class Type {
 
   get helpGroup () {
     return this._group || 'Options:'
+  }
+
+  hidden (h) {
+    this._hidden = h
+    return this
+  }
+
+  get isHidden () {
+    return !!this._hidden
   }
 
   validateConfig (utils) {
@@ -283,6 +300,7 @@ class Type {
       helpDesc: this.helpDesc,
       helpHints: this.helpHints,
       helpGroup: this.helpGroup,
+      isHidden: this.isHidden,
       // populated via parse
       value: this.value,
       source: this.source,
