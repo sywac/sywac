@@ -80,7 +80,6 @@ class TypePositional extends TypeWrapper {
   toResult () {
     return this.elementType.toResult()
   }
-
 }
 
 module.exports = TypePositional
