@@ -113,7 +113,8 @@ class Api {
     if (Array.isArray(dsl)) {
       opts.params = dsl
     } else if (typeof dsl === 'object') {
-      opts = dsl
+      if (dsl.params) opts = dsl
+      else opts.params = dsl
     } else if (typeof dsl === 'string') {
       if (!this.helpOpts.usage) this.helpOpts.usage = dsl
       let array = this.utils.stringToMultiPositional(dsl)
@@ -133,14 +134,14 @@ class Api {
       }
     }
 
-    opts.ignore = [].concat(opts.ignore).filter(Boolean) // guarantee array
+    opts.ignore = ['Usage:', '$0'].concat(opts.ignore).filter(Boolean)
 
     let params = Array.isArray(opts.params) ? opts.params : Object.keys(opts.params).map(key => {
       let obj = opts.params[key]
       if (obj && !obj.flags) obj.flags = key
       return obj
     })
-    // console.log('!!!\n', params, '\n!!!')
+    
     let numSkipped = 0
     params.forEach((param, index) => {
       // accept an array of strings or objects
@@ -153,8 +154,8 @@ class Api {
       // TODO if no flags or aliases, throw error
 
       // convenience to define descriptions in opts
-      if (!(param.description || param.desc) && (opts.description || opts.desc)) {
-        param.desc = [].concat(opts.description || opts.desc)[index - numSkipped]
+      if (!(param.description || param.desc) && (opts.paramsDescription || opts.paramsDesc)) {
+        param.desc = [].concat(opts.paramsDescription || opts.paramsDesc)[index - numSkipped]
       }
 
       let positionalFlags = param.flags
