@@ -12,6 +12,7 @@ class Context {
     this._helpBuffer = opts.helpBuffer
     // config
     this.types = {}
+    // this.levels = []
     // args to parse per type
     this.args = /* opts.args || */ []
     this.slurped = /* opts.slurped || */ []
@@ -23,6 +24,7 @@ class Context {
     // this.errors = []
     // other
     this.commandHandlerRun = false
+    this.helpRequested = false
   }
 
   /*
@@ -54,10 +56,23 @@ class Context {
     return this._helpBuffer
   }
 
-  withTypes (apiName, types) {
-    this.types[apiName] = types
+  pushLevel (level, types) {
+    // console.log('context.js pushLevel > entering level:', level)
+    // this.levels.push(level)
+    this.types[level] = types
     return this
   }
+
+  /*
+  popLevel () {
+    let oldLevel = this.levels.pop()
+    // console.log('context.js popLevel > leaving api:', oldLevel)
+  }
+
+  get currentLevel () {
+    return this.levels[this.levels.length - 1]
+  }
+  */
 
   slurpArgs (args) {
     if (!args) args = process.argv.slice(2)
@@ -137,7 +152,7 @@ class Context {
     return kvArray
   }
 
-  matchCommand (apiName, aliases, isDefault) {
+  matchCommand (level, aliases, isDefault) {
     if (!this.argv._) return false // TODO what to do without an unknownType?
     // first determine if argv._ starts with ANY known command alias
     // if there's a match and it's NOT one of the given aliases, return false
@@ -145,8 +160,7 @@ class Context {
     // if there's NO match and the given isDefault is true, return true
     // otherwise return false
     let candidate = this.argv._[0]
-    // console.log('context.js matchCommand > apiName:', apiName, 'this.types:', this.types)
-    let matchFound = (this.types[apiName] || []).some(type => {
+    let matchFound = (this.types[level] || []).some(type => {
       return type.datatype === 'command' && type.aliases.some(alias => alias === candidate)
     })
     return {
@@ -155,19 +169,37 @@ class Context {
     }
   }
 
-  addHelp (apiName, opts) {
-    // populate helpBuffer from types
+  deferHelp (opts) {
+    this.helpRequested = opts || {}
+    return this
+  }
+
+  addDeferredHelp (implicitCommand) {
+    // console.log('context.js addDeferredHelp > type levels:', Object.keys(this.types))
     let groups = {}
     // TODO something about group order here
-    ;(this.types[apiName] || []).forEach(type => {
-      groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
-    })
+    let mappedLevels = Object.keys(this.types)
+    let mappedLevelsLength = mappedLevels.length
+    // let levelIndexForCommands = implicitCommand ? mappedLevelsLength - 2 : mappedLevelsLength - 1
+    let i = implicitCommand ? mappedLevelsLength - 2 : mappedLevelsLength - 1
+    let includeCommands = true
+    for (/* let i = mappedLevelsLength - 1 */ ; i >= 0; i--) {
+      (this.types[mappedLevels[i]] || []).forEach(type => {
+        // if (i === levelIndexForCommands || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
+        if (includeCommands || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
+      })
+      includeCommands = false
+    }
     // TODO add examples as a group
     this.helpBuffer.groups = groups
 
     // add/set output to helpBuffer.toString()
-    this.output = this.helpBuffer.toString(opts)
+    this.output = this.helpBuffer.toString(this.helpRequested)
     return this
+  }
+
+  addHelp (opts) {
+    return this.deferHelp(opts).addDeferredHelp(false)
   }
 
   populateArgv (typeResults) {

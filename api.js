@@ -337,6 +337,11 @@ class Api {
   parse (args) {
     let context = this.initContext(false).slurpArgs(args)
     return this.parseFromContext(context).then(whenDone => {
+      if (context.helpRequested && !context.output) {
+        // console.log('api.js parse > adding deferred help')
+        context.addDeferredHelp(false)
+      }
+
       this.types.forEach(type => type.reset())
       if (this.unknownType) this.unknownType.reset()
       return context.toResult()
@@ -345,7 +350,7 @@ class Api {
 
   parseFromContext (context) {
     // add known types to context
-    this.captureTypes(context)
+    this.applyTypes(context)
     // run async parsing for all types except unknown
     let parsePromises = this.types.map(type => type.parse(context))
 
@@ -374,17 +379,17 @@ class Api {
       utils: this.utils,
       helpBuffer: this.get('helpBuffer', helpOpts)
     })
-    return includeTypes ? this.captureTypes(context) : context
+    return includeTypes ? this.applyTypes(context) : context
   }
 
-  captureTypes (context) {
-    context.withTypes(this.name, this.types.map(type => type.toObject()))
+  applyTypes (context) {
+    context.pushLevel(this.name, this.types.map(type => type.toObject()))
     return context
   }
 
   // optional convenience methods
   getHelp (opts) {
-    return this.initContext(true).addHelp(this.name, opts).output
+    return this.initContext(true).addHelp(opts).output
   }
 }
 

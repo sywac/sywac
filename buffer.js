@@ -17,7 +17,7 @@ class Buffer {
     this._slogan = opts.slogan || '' // "Need a product name? Ask alain!"
     this._usage = opts.usage || ''   // "Usage: $0 [options] <command>"
     this._groups = opts.groups || {} // Commands, Options, Examples
-    this._groupOrder = opts.groupOrder || []
+    this._groupOrder = opts.groupOrder || ['Commands:', 'Arguments:', 'Options:']
     // each group keyed by heading
     // with a value of array<types>
     // each type should have:
@@ -94,6 +94,7 @@ class Buffer {
   }
 
   toString (opts) {
+    opts = opts || {}
     let str = this.helpContent(opts)
     str = this.appendSection(str, this.errorContent(opts), this.sectionSep)
     return str

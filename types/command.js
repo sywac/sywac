@@ -67,7 +67,7 @@ class TypeCommand extends Type {
   get helpHints () {
     if (typeof this._hints !== 'undefined') return this._hints
     let hints = []
-    if (this.aliases.length > 1) hints.push('aliases: ' + this.validAliases.slice(1).join(', '))
+    if (this.validAliases.length > 1) hints.push('aliases: ' + this.validAliases.slice(1).join(', '))
     if (this.isDefault) hints.push('default')
     return hints.length ? '[' + hints.join('] [') + ']' : ''
   }
@@ -82,9 +82,7 @@ class TypeCommand extends Type {
 
   postParse (context) {
     let match = context.matchCommand(this.api.parentName, this.validAliases, this.isDefault)
-    // console.log(`command.js postParse > checking match for ${this._flags}:`, match)
     if (!match.explicit && !match.implicit) return this.resolve()
-    // console.log('command.js postParse > matched command:', this.aliases)
 
     if (match.explicit) {
       // "claim" the arg from context.slurped so logic in unknownType works
@@ -109,11 +107,15 @@ class TypeCommand extends Type {
     // call sync "setup" handler, if defined
     this.setupHandler(this.api)
 
-    // let childContext = context.newChild() // TODO need another way to distinguish types at different levels
     return this.api.parseFromContext(context).then(whenDone => {
       // only run innermost command handler
       if (context.commandHandlerRun) return this.resolve()
       context.commandHandlerRun = true
+      if (context.helpRequested) {
+        // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
+        if (!context.output) context.addDeferredHelp(match.implicit)
+        return this.resolve()
+      }
       return this.runHandler(context.argv, context)
     })
   }
