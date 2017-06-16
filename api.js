@@ -9,14 +9,16 @@ class Api {
     this.types = []
     this._helpOpts = {}
     this._factories = {
+      unknownType: this.getUnknownType,
       context: this.getContext,
       helpBuffer: this.getHelpBuffer,
       boolean: this.getBoolean,
       string: this.getString,
       number: this.getNumber,
-      help: this.getHelpType,
+      helpType: this.getHelpType,
       array: this.getArray,
-      positional: this.getPositional
+      positional: this.getPositional,
+      command: this.getCommand
     }
     this.configure(opts)
   }
@@ -24,7 +26,6 @@ class Api {
   configure (opts) {
     opts = opts || {}
     // lazily configured instance dependencies (expects a single instance)
-    this._unknownType = opts.unknownType || this._unknownType
     this._utils = opts.utils || this._utils
 
     // lazily configured factory dependencies (expects a function to call per instance)
@@ -34,12 +35,24 @@ class Api {
 
     // other
     this._name = opts.name || this._name
+    this._parentName = opts.parentName || this._parentName // TODO this seems awfully hacky
     return this
+  }
+
+  newChild (commandName) {
+    // don't need from parent: types, _helpOpts
+    // keep from parent: _factories, utils, name (plus command chain),
+    return new Api({
+      factories: this._factories,
+      utils: this.utils,
+      name: this.name + ' ' + commandName,
+      parentName: this.name
+    })
   }
 
   // lazy dependency accessors
   get unknownType () {
-    if (!this._unknownType) this._unknownType = require('./types/unknown').get()
+    if (!this._unknownType) this._unknownType = this.get('unknownType')
     return this._unknownType
   }
 
@@ -57,6 +70,10 @@ class Api {
     return this._name
   }
 
+  get parentName () {
+    return this._parentName || 'node'
+  }
+
   // type factories
   registerFactory (name, factory) {
     if (name && typeof factory === 'function') this._factories[name] = factory
@@ -66,6 +83,10 @@ class Api {
   get (name, opts) {
     if (name && this._factories[name]) return this._factories[name].call(this, opts)
     return null
+  }
+
+  getUnknownType (opts) {
+    return require('./types/unknown').get(opts)
   }
 
   getContext (opts) {
@@ -89,7 +110,7 @@ class Api {
   }
 
   getHelpType (opts) {
-    return require('./types/help').get(opts)
+    return require('./types/help').get(Object.assign({ apiName: this.name }, opts))
   }
 
   getArray (opts) {
@@ -100,10 +121,44 @@ class Api {
     return require('./types/positional').get(opts)
   }
 
+  getCommand (opts) {
+    return require('./types/command').get(opts)
+  }
+
   // API
   usage (usage) {
     if (usage) this.helpOpts.usage = usage
     return this
+  }
+
+  command (dsl, opts) {
+    opts = opts || {}
+
+    // argument shuffling
+    if (typeof opts === 'function') {
+      opts = { run: opts }
+    }
+    if (dsl && typeof dsl === 'object') {
+      opts = Object.assign({}, dsl, opts)
+    } else if (typeof dsl === 'string') {
+      opts.flags = dsl
+    }
+    if (!opts.flags && opts.aliases) opts.flags = [].concat(opts.aliases)[0]
+
+    // opts is an object and opts.flags is the dsl
+    // split dsl into name/alias and positionals
+    // then populate opts.aliases and opts.params
+    const mp = this.utils.stringToMultiPositional(opts.flags)
+    const name = mp.shift()
+    opts.aliases = opts.aliases ? Array.from(new Set([name].concat(opts.aliases))) : [name]
+    if (mp.length) {
+      if (!opts.params) opts.params = mp
+      else if (!opts.paramsDsl) opts.paramsDsl = mp.join(' ')
+    }
+
+    opts.api = this.newChild(name)
+
+    return this.custom(this.get('command', opts))
   }
 
   positional (dsl, opts) {
@@ -141,7 +196,7 @@ class Api {
       if (obj && !obj.flags) obj.flags = key
       return obj
     })
-    
+
     let numSkipped = 0
     params.forEach((param, index) => {
       // accept an array of strings or objects
@@ -158,12 +213,25 @@ class Api {
         param.desc = [].concat(opts.paramsDescription || opts.paramsDesc)[index - numSkipped]
       }
 
+      // don't apply command desc to positional params (via configure calls below)
+      let optsDescription = opts.description
+      let optsDesc = opts.desc
+      delete opts.description
+      delete opts.desc
+
+      // inferPositionalProperties will generate flags/aliases for wrapped elementType needed for parsing
       let positionalFlags = param.flags
       delete param.flags
+
       param = Object.assign(this.utils.inferPositionalProperties(positionalFlags, Object.keys(this._factories)), param)
       if (!param.elementType) param.elementType = this._getType(param).configure(opts, false)
+
       param.flags = positionalFlags
       let positional = this.get('positional', param).configure(opts, false)
+
+      opts.description = optsDescription
+      opts.desc = optsDesc
+
       if (this.unknownType) this.unknownType.addPositional(positional)
       this.custom(positional)
     })
@@ -246,7 +314,7 @@ class Api {
 
   // specialty types
   help (flags, opts) {
-    return this._addType(flags, opts, 'help')
+    return this._addType(flags, opts, 'helpType')
   }
 
   // multiple value types
@@ -267,44 +335,56 @@ class Api {
   // once configured with types, parse and exec asynchronously
   // return a Promise<Result>
   parse (args) {
-    let context = this.initContext().slurpArgs(args)
-
-    let parsePromises = this.types.map(type => type.parse(context))
-
-    return Promise.all(parsePromises).then(whenDone => {
-      return (this.unknownType && this.unknownType.parse(context)) || Promise.resolve(true)
-    }).then(whenDone => {
-      // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
-      let postParse = this.types.map(type => type.postParse(context))
-      if (this.unknownType) postParse = postParse.concat(this.unknownType.postParse(context))
-      return Promise.all(postParse)
-    }).then(whenDone => {
-      let types = this.types.map(type => {
-        let r = type.toResult()
-        type.reset() // TODO instead of holding value within a Type itself, populate Context and reset should be unnecessary
-        return r
-      })
-      if (this.unknownType) {
-        types = types.concat(this.unknownType.toResult())
-        this.unknownType.reset()
-      }
-      return context.toResult(types)
+    let context = this.initContext(false).slurpArgs(args)
+    return this.parseFromContext(context).then(whenDone => {
+      this.types.forEach(type => type.reset())
+      if (this.unknownType) this.unknownType.reset()
+      return context.toResult()
     })
   }
 
-  initContext () {
+  parseFromContext (context) {
+    // add known types to context
+    this.captureTypes(context)
+    // run async parsing for all types except unknown
+    let parsePromises = this.types.map(type => type.parse(context))
+
+    return Promise.all(parsePromises).then(whenDone => {
+      // now run async parsing for unknown
+      return (this.unknownType && this.unknownType.parse(context)) || Promise.resolve(true)
+    }).then(whenDone => {
+      // once all parsing is complete, populate argv in context (sync)
+      let types = this.types.map(type => type.toResult())
+      if (this.unknownType) types = types.concat(this.unknownType.toResult())
+      context.populateArgv(types)
+
+      // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
+
+      // run async post-parsing
+      let postParse = this.types.map(type => type.postParse(context)) // this potentially runs commands
+      if (this.unknownType) postParse = postParse.concat(this.unknownType.postParse(context))
+      return Promise.all(postParse)
+    })
+  }
+
+  initContext (includeTypes) {
     let helpOpts = Object.assign({ utils: this.utils }, this.helpOpts)
     if (typeof helpOpts.usage === 'string') helpOpts.usage = helpOpts.usage.replace('$0', this.name)
     let context = this.get('context', {
       utils: this.utils,
       helpBuffer: this.get('helpBuffer', helpOpts)
     })
-    return context.withTypes(this.types.map(type => type.toObject()))
+    return includeTypes ? this.captureTypes(context) : context
+  }
+
+  captureTypes (context) {
+    context.withTypes(this.name, this.types.map(type => type.toObject()))
+    return context
   }
 
   // optional convenience methods
   getHelp (opts) {
-    return this.initContext().addHelp(opts).output
+    return this.initContext(true).addHelp(this.name, opts).output
   }
 }
 

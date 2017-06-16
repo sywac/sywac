@@ -11,17 +11,38 @@ class Context {
     this._utils = opts.utils
     this._helpBuffer = opts.helpBuffer
     // config
-    this.types = []
+    this.types = {}
     // args to parse per type
-    this.args = []
-    this.slurped = []
+    this.args = /* opts.args || */ []
+    this.slurped = /* opts.slurped || */ []
     // results of parsing and validation
     this.code = 0
     this.output = ''
-    this.argv = {}
-    this.details = { args: [], types: [] }
+    this.argv = /* opts.argv || */ {}
+    this.details = /* opts.details || */ { args: [], types: [] }
     // this.errors = []
+    // other
+    this.commandHandlerRun = false
   }
+
+  /*
+  newChild () {
+    // toss: code, output
+    // keep: utils, helpBuffer, types, args, slurped, argv, details
+    // new: build up running commands
+    // let argv = Object.assign({}, this.argv) // TODO not sure if shallow copy will work for all types
+    // argv._ = argv._.slice(isCommandExplicit ? 1 : 0)
+    return new Context({
+      utils: this.utils,
+      helpBuffer: this.helpBuffer,
+      args: this.args,
+      slurped: this.slurped,
+      // argv: argv,
+      argv: this.argv,
+      details: this.details,
+    }).withTypes(this.types)
+  }
+  /**/
 
   get utils () {
     if (!this._utils) this._utils = require('./lib/utils').get()
@@ -33,8 +54,8 @@ class Context {
     return this._helpBuffer
   }
 
-  withTypes (types) {
-    this.types = types
+  withTypes (apiName, types) {
+    this.types[apiName] = types
     return this
   }
 
@@ -116,11 +137,29 @@ class Context {
     return kvArray
   }
 
-  addHelp (opts) {
+  matchCommand (apiName, aliases, isDefault) {
+    if (!this.argv._) return false // TODO what to do without an unknownType?
+    // first determine if argv._ starts with ANY known command alias
+    // if there's a match and it's NOT one of the given aliases, return false
+    // if there's a match and it IS one of the given aliases, return true
+    // if there's NO match and the given isDefault is true, return true
+    // otherwise return false
+    let candidate = this.argv._[0]
+    // console.log('context.js matchCommand > apiName:', apiName, 'this.types:', this.types)
+    let matchFound = (this.types[apiName] || []).some(type => {
+      return type.datatype === 'command' && type.aliases.some(alias => alias === candidate)
+    })
+    return {
+      explicit: matchFound && aliases.some(alias => alias === candidate),
+      implicit: !matchFound && isDefault
+    }
+  }
+
+  addHelp (apiName, opts) {
     // populate helpBuffer from types
     let groups = {}
     // TODO something about group order here
-    this.types.forEach(type => {
+    ;(this.types[apiName] || []).forEach(type => {
       groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
     })
     // TODO add examples as a group
@@ -131,22 +170,29 @@ class Context {
     return this
   }
 
-  // TODO this seems janky
-  toResult (typeResults) {
-    let argv = this.argv
+  populateArgv (typeResults) {
+    let detailIndex
     typeResults.forEach(tr => {
+      // find and reset detailed object; otherwise add it
+      detailIndex = this.details.types.findIndex(t => t.datatype === tr.datatype && this.utils.sameArrays(tr.aliases, t.aliases))
+      if (detailIndex !== -1) this.details.types[detailIndex] = tr
+      else this.details.types.push(tr)
+
+      // if not command, set value for each alias in argv
+      if (tr.datatype === 'command') return undefined // do not add command aliases to argv
       tr.aliases.forEach(alias => {
-        argv[alias] = tr.value
+        this.argv[alias] = tr.value
       })
     })
-    let result = {
+  }
+
+  toResult () {
+    return {
       code: this.code,
       output: this.output,
-      argv: argv,
+      argv: this.argv,
       details: this.details
     }
-    result.details.types = result.details.types.concat(typeResults)
-    return result
   }
 }
 

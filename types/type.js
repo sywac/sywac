@@ -314,6 +314,7 @@ class Type {
     // console.log('toResult', this.constructor.name, this.helpFlags)
     return {
       // populated via config
+      // TODO add parent (mainly for commands) ??
       aliases: this.aliases,
       datatype: this.datatype,
       // defaultVal: this.defaultVal,
