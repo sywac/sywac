@@ -31,6 +31,12 @@ class TypePositional extends TypeWrapper {
     return this._group || 'Arguments:'
   }
 
+  withParent (apiName) {
+    super.withParent(apiName)
+    this.elementType.withParent(apiName)
+    return this
+  }
+
   // called by api
   validateConfig (utils) {
     if (this.acceptFlags) this.elementType.validateConfig(utils)

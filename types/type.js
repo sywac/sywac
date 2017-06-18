@@ -36,6 +36,15 @@ class Type {
     return this
   }
 
+  withParent (apiName) {
+    this._parent = apiName
+    return this
+  }
+
+  get parent () {
+    return this._parent || 'node'
+  }
+
   get datatype () {
     // subtypes should override this so as not to rely on this._value
     // because it's used for help text hints, when value is not set
@@ -318,7 +327,7 @@ class Type {
     // console.log('toResult', this.constructor.name, this.helpFlags)
     return {
       // populated via config
-      // TODO add parent (mainly for commands) ??
+      parent: this.parent,
       aliases: this.aliases,
       datatype: this.datatype,
       // defaultVal: this.defaultVal,

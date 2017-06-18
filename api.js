@@ -21,6 +21,7 @@ class Api {
       command: this.getCommand
     }
     this.configure(opts)
+    if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
   }
 
   configure (opts) {
@@ -52,7 +53,7 @@ class Api {
 
   // lazy dependency accessors
   get unknownType () {
-    if (!this._unknownType) this._unknownType = this.get('unknownType')
+    if (!this._unknownType) this._unknownType = this.get('unknownType').withParent(Api.ROOT_NAME)
     return this._unknownType
   }
 
@@ -110,7 +111,7 @@ class Api {
   }
 
   getHelpType (opts) {
-    return require('./types/help').get(Object.assign({ apiName: this.name }, opts))
+    return require('./types/help').get(opts)
   }
 
   getArray (opts) {
@@ -242,6 +243,7 @@ class Api {
   // configure any arg type
   custom (type) {
     if (type) {
+      if (typeof type.withParent === 'function') type.withParent(this.name)
       if (typeof type.validateConfig === 'function') type.validateConfig(this.utils)
       this.types.push(type)
     }
@@ -400,5 +402,7 @@ class Api {
     return this.initContext(true).addHelp(opts).output
   }
 }
+
+Api.ROOT_NAME = undefined // defined by first Api instance in constructor
 
 module.exports = Api

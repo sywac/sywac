@@ -206,7 +206,7 @@ class Context {
     let detailIndex
     typeResults.forEach(tr => {
       // find and reset detailed object; otherwise add it
-      detailIndex = this.details.types.findIndex(t => t.datatype === tr.datatype && this.utils.sameArrays(tr.aliases, t.aliases))
+      detailIndex = this.details.types.findIndex(t => t.parent === tr.parent && t.datatype === tr.datatype && this.utils.sameArrays(tr.aliases, t.aliases))
       if (detailIndex !== -1) this.details.types[detailIndex] = tr
       else this.details.types.push(tr)
 
