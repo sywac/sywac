@@ -17,7 +17,7 @@ class Buffer {
     this._slogan = opts.slogan || '' // "Need a product name? Ask alain!"
     this._usage = opts.usage || ''   // "Usage: $0 [options] <command>"
     this._groups = opts.groups || {} // Commands, Options, Examples
-    this._groupOrder = opts.groupOrder || ['Commands:', 'Arguments:', 'Options:']
+    this._groupOrder = opts.groupOrder || []
     // each group keyed by heading
     // with a value of array<types>
     // each type should have:
@@ -119,7 +119,10 @@ class Buffer {
     let str = ''
     let groupsLeft = JSON.parse(JSON.stringify(this.groups))
     let order = this.groupOrder
-    if (!order || !order.length) order = Object.keys(groupsLeft)
+    if (!order || !order.length) {
+      // default order: Commands, Arguments, <custom>, Options
+      order = Array.from(new Set(['Commands:', 'Arguments:'].concat(Object.keys(groupsLeft)).concat('Options:')))
+    }
     let types
     order.forEach(heading => {
       types = groupsLeft[heading] // array of types
