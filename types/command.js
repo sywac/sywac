@@ -64,12 +64,9 @@ class TypeCommand extends Type {
     return super.isHidden
   }
 
-  get helpHints () {
-    if (typeof this._hints !== 'undefined') return this._hints
-    let hints = []
+  buildHelpHints (hints) {
     if (this.validAliases.length > 1) hints.push('aliases: ' + this.validAliases.slice(1).join(', '))
     if (this.isDefault) hints.push('default')
-    return hints.length ? '[' + hints.join('] [') + ']' : ''
   }
 
   get helpGroup () {

@@ -29,6 +29,12 @@ class TypeHelp extends TypeBoolean {
     return this.aliases.filter(alias => alias.length > 1)
   }
 
+  buildHelpHints (hints) {
+    let commands = this.implicitCommands
+    if (commands.length) hints.push('commands: ' + commands.join(', '))
+    super.buildHelpHints(hints)
+  }
+
   validateConfig (utils) {
     if (!this._flags && !this._aliases.length) this._aliases.push('help')
     super.validateConfig(utils)

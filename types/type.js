@@ -101,12 +101,16 @@ class Type {
   get helpHints () {
     if (typeof this._hints !== 'undefined') return this._hints
     let hints = []
-    if (this.datatype) hints.push(this.datatype)
-
-    let dv = this._defaultVal
-    if (dv && (!Array.isArray(dv) || dv.length)) hints.push(`default: ${dv}`)
-
+    this.buildHelpHints(hints)
     return hints.length ? '[' + hints.join('] [') + ']' : ''
+  }
+
+  buildHelpHints (hintsArray) {
+    // datatype
+    if (this.datatype) hintsArray.push(this.datatype)
+    // default value
+    let dv = this._defaultVal
+    if (dv && (!Array.isArray(dv) || dv.length)) hintsArray.push(`default: ${dv}`)
   }
 
   group (g) {
