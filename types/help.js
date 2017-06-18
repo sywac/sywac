@@ -1,5 +1,6 @@
 'use strict'
 
+const Type = require('./type')
 const TypeBoolean = require('./boolean')
 
 class TypeHelp extends TypeBoolean {
@@ -8,35 +9,38 @@ class TypeHelp extends TypeBoolean {
   }
 
   constructor (opts) {
-    super(Object.assign({ desc: 'Show help' }, opts))
+    super(Object.assign({ desc: 'Show help', implicitCommand: true }, opts))
   }
 
-  // configure (opts, override) {
-  //   opts = opts || {}
-  //   if (typeof override === 'undefined') override = true
-  //   super.configure(opts, override)
-  //
-  //   if (override || !this._apiName) this._apiName = opts.apiName || this._apiName
-  //
-  //   return this
-  // }
+  configure (opts, override) {
+    opts = opts || {}
+    if (typeof override === 'undefined') override = true
+    super.configure(opts, override)
+
+    if (override || typeof this._implicitCommand === 'undefined') {
+      this._implicitCommand = 'implicitCommand' in opts ? opts.implicitCommand : this._implicitCommand
+    }
+
+    return this
+  }
+
+  get implicitCommands () {
+    if (!this._implicitCommand) return []
+    return this.aliases.filter(alias => alias.length > 1)
+  }
 
   validateConfig (utils) {
     if (!this._flags && !this._aliases.length) this._aliases.push('help')
     super.validateConfig(utils)
   }
 
+  implicitCommandFound (source, position, raw) {
+    this.setValue(true)
+    this.applySource(source, position, raw)
+  }
+
   postParse (context) {
-    // console.log('postParse', this.constructor.name)
-    // console.log('help.js postParse > type options:', Object.keys(context.types))
-
-    // TODO if (!this.value) look for implicit "help" command?
-    // TODO need to do anything to make the output command-specific?
-
-    if (this.value) {
-      // TODO clear any validation errors (from parsing) in context, if necessary
-      context.deferHelp() // TODO pass opts from this type config
-    }
+    if (this.value) context.deferHelp() // TODO pass opts from this type config
     return this.resolve()
   }
 }

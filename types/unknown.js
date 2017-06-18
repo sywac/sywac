@@ -13,6 +13,7 @@ class TypeUnknown extends Type {
       defaultValue: []
     }, opts))
     this.positionals = []
+    this.implicit = {}
   }
 
   get datatype () {
@@ -21,6 +22,12 @@ class TypeUnknown extends Type {
 
   addPositional (positional) {
     this.positionals.push(positional)
+  }
+
+  addImplicit (aliases, type) {
+    aliases.forEach(alias => {
+      this.implicit[alias] = type
+    })
   }
 
   parse (context) {
@@ -64,8 +71,13 @@ class TypeUnknown extends Type {
       prev = arg.parsed
     })
 
+    if (unparsed.length) {
+      let implicitCommands = Object.keys(this.implicit)
+      if (implicitCommands.length) unparsed = this._tryImplicitCommand(unparsed, context, implicitCommands)
+    }
+
     // console.log(`unparsed before positionals`, unparsed)
-    if (this.positionals && this.positionals.length && unparsed.length) {
+    if (unparsed.length && this.positionals && this.positionals.length) {
       unparsed = this._populatePositionals(unparsed)
       // this.positionals.forEach(p => p.validateParsed(context))
     }
@@ -88,6 +100,17 @@ class TypeUnknown extends Type {
     }
 
     return super.resolve()
+  }
+
+  _tryImplicitCommand (unparsed, context, implicitCommands) {
+    let first = unparsed[0]
+    let matched = implicitCommands.find(alias => alias === first.raw) // maybe indexOf would be better/faster?
+    if (matched) {
+      context.slurped[first.index].parsed[0].claimed = true
+      this.implicit[matched].implicitCommandFound(Type.SOURCE_POSITIONAL, first.index, first.raw)
+      return unparsed.slice(1)
+    }
+    return unparsed
   }
 
   // <a> <b..> <c>

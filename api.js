@@ -335,6 +335,14 @@ class Api {
   // once configured with types, parse and exec asynchronously
   // return a Promise<Result>
   parse (args) {
+    // first add types with an implicit command to unknownType
+    this.types.forEach(type => {
+      let implicit = type.implicitCommands
+      if (!implicit || !implicit.length) return undefined
+      this.unknownType.addImplicit(implicit, type)
+    })
+
+    // then init context and kick off recursive type parsing/execution
     let context = this.initContext(false).slurpArgs(args)
     return this.parseFromContext(context).then(whenDone => {
       if (context.helpRequested && !context.output) {
