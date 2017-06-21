@@ -1,6 +1,5 @@
 'use strict'
 
-const Type = require('./type')
 const TypeBoolean = require('./boolean')
 
 class TypeHelp extends TypeBoolean {
