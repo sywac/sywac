@@ -141,11 +141,12 @@ class Context {
     // TODO something about group order here
     let mappedLevels = Object.keys(this.types)
     let mappedLevelsLength = mappedLevels.length
-    for (let i = mappedLevelsLength - 1, includeCommands = true; i >= 0; i--) {
-      (this.types[mappedLevels[i]] || []).forEach(type => {
-        if (includeCommands || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
+    let currentLevel
+    for (let i = mappedLevelsLength - 1; i >= 0; i--) {
+      currentLevel = mappedLevels[i]
+      ;(this.types[currentLevel] || []).forEach(type => {
+        if (currentLevel === helpBuffer._usageName || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
       })
-      includeCommands = false
     }
     // TODO add examples as a group
     helpBuffer.groups = groups
