@@ -16,11 +16,20 @@ class TypeHelp extends TypeImplicitCommand {
     if (typeof override === 'undefined') override = true
     super.configure(opts, override)
 
-    // if (override || typeof this._implicitCommand === 'undefined') {
-    //   this._implicitCommand = 'implicitCommand' in opts ? opts.implicitCommand : this._implicitCommand
-    // }
+    if (override || !this._bufferOpts) this._bufferOpts = this._assignBufferOpts(this._bufferOpts || {}, opts)
 
     return this
+  }
+
+  _assignBufferOpts (target, source) {
+    ['includePreface', 'includeUsage', 'includeGroups', 'includeEpilogue'].forEach(opt => {
+      if (opt in source) target[opt] = source[opt]
+    })
+    return target
+  }
+
+  get bufferOpts () {
+    return this._bufferOpts || {}
   }
 
   validateConfig (utils) {
@@ -39,7 +48,7 @@ class TypeHelp extends TypeImplicitCommand {
   }
 
   requestHelp (context) {
-    context.deferHelp() // TODO pass opts from this type config
+    context.deferHelp(this.bufferOpts)
   }
 }
 
