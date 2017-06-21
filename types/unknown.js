@@ -107,7 +107,7 @@ class TypeUnknown extends Type {
     let matched = implicitCommands.find(alias => alias === first.raw) // maybe indexOf would be better/faster?
     if (matched) {
       context.slurped[first.index].parsed[0].claimed = true
-      this.implicit[matched].implicitCommandFound(Type.SOURCE_POSITIONAL, first.index, first.raw)
+      this.implicit[matched].implicitCommandFound(Type.SOURCE_POSITIONAL, first.index, first.raw, context)
       return unparsed.slice(1)
     }
     return unparsed

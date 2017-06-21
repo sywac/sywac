@@ -15,7 +15,18 @@ class Buffer {
     // stuff
     this._icon = opts.icon || ''     // think alain
     this._slogan = opts.slogan || '' // "Need a product name? Ask alain!"
+
     this._usage = opts.usage || ''   // "Usage: $0 [options] <command>"
+    this._usageName = opts.usageName || ''
+    this._usagePrefix = opts.usagePrefix || 'Usage: $0'
+    this._usageHasCommand = 'usageHasCommand' in opts ? opts.usageHasCommand : false
+    this._usageCommandPlaceholder = 'usageCommandPlaceholder' in opts ? opts.usageCommandPlaceholder : '<command>'
+    this._usageHasArgs = 'usageHasArgs' in opts ? opts.usageHasArgs : false
+    this._usageArgsPlaceholder = 'usageArgsPlaceholder' in opts ? opts.usageArgsPlaceholder : '<args>'
+    this._usageHasOptions = 'usageHasOptions' in opts ? opts.usageHasOptions : false
+    this._usageOptionsPlaceholder = 'usageOptionsPlaceholder' in opts ? opts.usageOptionsPlaceholder : '[options]'
+    this._usagePositionals = Array.isArray(opts.usagePositionals) ? opts.usagePositionals : []
+
     this._groups = opts.groups || {} // Commands, Options, Examples
     this._groupOrder = opts.groupOrder || []
     // each group keyed by heading
@@ -30,10 +41,6 @@ class Buffer {
     this._maxWidth = opts.maxWidth || Math.min(process.stdout.columns || 100, 100)
     // dependencies
     this._utils = opts.utils
-  }
-
-  reset () {
-    // TODO reset error stuff
   }
 
   get utils () {
@@ -74,7 +81,21 @@ class Buffer {
   }
 
   get usage () {
-    return this._usage
+    let usage = this._usage || this.buildUsage()
+    return this._usageName ? usage.replace('$0', this._usageName) : usage
+  }
+
+  buildUsage () {
+    // _usagePrefix + (_usagePositionals.join(' ') || _usageHasCommand + _usageHasArgs) + _usageHasOptions
+    let usage = this._usagePrefix
+    if (this._usagePositionals.length) {
+      usage += ' ' + this._usagePositionals.join(' ')
+    } else {
+      if (this._usageHasCommand && this._usageCommandPlaceholder) usage += ' ' + this._usageCommandPlaceholder
+      if (this._usageHasArgs && this._usageArgsPlaceholder) usage += ' ' + this._usageArgsPlaceholder
+    }
+    if (this._usageHasOptions && this._usageOptionsPlaceholder) usage += ' ' + this._usageOptionsPlaceholder
+    return usage
   }
 
   get groups () {

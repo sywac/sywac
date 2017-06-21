@@ -40,14 +40,19 @@ class TypeHelp extends TypeBoolean {
     super.validateConfig(utils)
   }
 
-  implicitCommandFound (source, position, raw) {
-    this.setValue(true)
-    this.applySource(source, position, raw)
+  validateParsed (context) {
+    if (this.value) this.requestHelp(context) // must call this before postParse in case of commands
+    return this.resolve()
   }
 
-  postParse (context) {
-    if (this.value) context.deferHelp() // TODO pass opts from this type config
-    return this.resolve()
+  implicitCommandFound (source, position, raw, context) {
+    this.setValue(true)
+    this.applySource(source, position, raw)
+    this.requestHelp(context) // must call this before postParse in case of commands
+  }
+
+  requestHelp (context) {
+    context.deferHelp() // TODO pass opts from this type config
   }
 }
 

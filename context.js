@@ -9,10 +9,8 @@ class Context {
     opts = opts || {}
     // dependencies
     this._utils = opts.utils
-    this._helpBuffer = opts.helpBuffer
     // config
     this.types = {}
-    // this.levels = []
     // args to parse per type
     this.args = /* opts.args || */ []
     this.slurped = /* opts.slurped || */ []
@@ -27,52 +25,15 @@ class Context {
     this.helpRequested = false
   }
 
-  /*
-  newChild () {
-    // toss: code, output
-    // keep: utils, helpBuffer, types, args, slurped, argv, details
-    // new: build up running commands
-    // let argv = Object.assign({}, this.argv) // TODO not sure if shallow copy will work for all types
-    // argv._ = argv._.slice(isCommandExplicit ? 1 : 0)
-    return new Context({
-      utils: this.utils,
-      helpBuffer: this.helpBuffer,
-      args: this.args,
-      slurped: this.slurped,
-      // argv: argv,
-      argv: this.argv,
-      details: this.details,
-    }).withTypes(this.types)
-  }
-  /**/
-
   get utils () {
     if (!this._utils) this._utils = require('./lib/utils').get()
     return this._utils
   }
 
-  get helpBuffer () {
-    if (!this._helpBuffer) this._helpBuffer = require('./buffer').get()
-    return this._helpBuffer
-  }
-
   pushLevel (level, types) {
-    // console.log('context.js pushLevel > entering level:', level)
-    // this.levels.push(level)
     this.types[level] = types
     return this
   }
-
-  /*
-  popLevel () {
-    let oldLevel = this.levels.pop()
-    // console.log('context.js popLevel > leaving api:', oldLevel)
-  }
-
-  get currentLevel () {
-    return this.levels[this.levels.length - 1]
-  }
-  */
 
   slurpArgs (args) {
     if (!args) args = process.argv.slice(2)
@@ -165,7 +126,7 @@ class Context {
     })
     return {
       explicit: matchFound && aliases.some(alias => alias === candidate),
-      implicit: !matchFound && isDefault
+      implicit: !matchFound && isDefault && !this.helpRequested
     }
   }
 
@@ -174,32 +135,27 @@ class Context {
     return this
   }
 
-  addDeferredHelp (implicitCommand) {
-    // console.log('context.js addDeferredHelp > type levels:', Object.keys(this.types))
+  addDeferredHelp (helpBuffer) {
     let groups = {}
     // TODO something about group order here
     let mappedLevels = Object.keys(this.types)
     let mappedLevelsLength = mappedLevels.length
-    // let levelIndexForCommands = implicitCommand ? mappedLevelsLength - 2 : mappedLevelsLength - 1
-    let i = implicitCommand ? mappedLevelsLength - 2 : mappedLevelsLength - 1
-    let includeCommands = true
-    for (/* let i = mappedLevelsLength - 1 */ ; i >= 0; i--) {
+    for (let i = mappedLevelsLength - 1, includeCommands = true; i >= 0; i--) {
       (this.types[mappedLevels[i]] || []).forEach(type => {
-        // if (i === levelIndexForCommands || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
         if (includeCommands || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
       })
       includeCommands = false
     }
     // TODO add examples as a group
-    this.helpBuffer.groups = groups
+    helpBuffer.groups = groups
 
     // add/set output to helpBuffer.toString()
-    this.output = this.helpBuffer.toString(this.helpRequested)
+    this.output = helpBuffer.toString(this.helpRequested)
     return this
   }
 
-  addHelp (opts) {
-    return this.deferHelp(opts).addDeferredHelp(false)
+  addHelp (helpBuffer, opts) {
+    return this.deferHelp(opts).addDeferredHelp(helpBuffer)
   }
 
   populateArgv (typeResults) {

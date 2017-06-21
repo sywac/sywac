@@ -37,6 +37,7 @@ class Api {
     // other
     this._name = opts.name || this._name
     this._parentName = opts.parentName || this._parentName // TODO this seems awfully hacky
+    this._helpOpts = opts.helpOpts || this._helpOpts
     return this
   }
 
@@ -47,8 +48,19 @@ class Api {
       factories: this._factories,
       utils: this.utils,
       name: this.name + ' ' + commandName,
-      parentName: this.name
+      parentName: this.name,
+      helpOpts: this._assignHelpOpts({}, this.helpOpts)
     })
+  }
+
+  _assignHelpOpts (target, source) {
+    [
+      'lineSep', 'sectionSep', 'pad', 'indent', 'split', 'icon', 'slogan',
+      'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth'
+    ].forEach(opt => {
+      if (opt in source) target[opt] = source[opt]
+    })
+    return target
   }
 
   // lazy dependency accessors
@@ -128,7 +140,19 @@ class Api {
 
   // API
   usage (usage) {
-    if (usage) this.helpOpts.usage = usage
+    if (typeof usage === 'string') this.helpOpts.usage = usage
+    else {
+      const keyMap = {
+        usage: 'usage',
+        prefix: 'usagePrefix',
+        commandPlaceholder: 'usageCommandPlaceholder',
+        argsPlaceholder: 'usageArgsPlaceholder',
+        optionsPlaceholder: 'usageOptionsPlaceholder'
+      }
+      Object.keys(keyMap).forEach(key => {
+        if (key in usage) this.helpOpts[keyMap[key]] = usage[key]
+      })
+    }
     return this
   }
 
@@ -153,17 +177,19 @@ class Api {
     const name = mp.shift()
     opts.aliases = opts.aliases ? Array.from(new Set([name].concat(opts.aliases))) : [name]
     if (mp.length) {
+      this.helpOpts.usageHasArgs = true
       if (!opts.params) opts.params = mp
       else if (!opts.paramsDsl) opts.paramsDsl = mp.join(' ')
     }
 
-    opts.api = this.newChild(name)
+    this.helpOpts.usageHasCommand = true
 
     return this.custom(this.get('command', opts))
   }
 
   positional (dsl, opts) {
     opts = opts || {}
+    let addedToHelp = false
 
     // TODO this logic is repetitive and messy
     if (Array.isArray(dsl)) {
@@ -172,7 +198,8 @@ class Api {
       if (dsl.params) opts = dsl
       else opts.params = dsl
     } else if (typeof dsl === 'string') {
-      if (!this.helpOpts.usage) this.helpOpts.usage = dsl
+      this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(dsl)
+      addedToHelp = true
       let array = this.utils.stringToMultiPositional(dsl)
       if (!opts.params) {
         opts.params = array
@@ -190,7 +217,7 @@ class Api {
       }
     }
 
-    opts.ignore = ['Usage:', '$0'].concat(opts.ignore).filter(Boolean)
+    opts.ignore = [].concat(opts.ignore).filter(Boolean)
 
     let params = Array.isArray(opts.params) ? opts.params : Object.keys(opts.params).map(key => {
       let obj = opts.params[key]
@@ -200,12 +227,16 @@ class Api {
 
     let numSkipped = 0
     params.forEach((param, index) => {
+      if (!param) return numSkipped++
+
       // accept an array of strings or objects
-      if (typeof param === 'string' && param.length) param = { flags: param }
+      if (typeof param === 'string') param = { flags: param }
       if (!param.flags && param.aliases) param.flags = [].concat(param.aliases)[0]
 
+      if (!addedToHelp) this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(param.flags)
+
       // allow "commentary" things in positional dsl string via opts.ignore
-      if (!param || ~opts.ignore.indexOf(param.flags)) return numSkipped++
+      if (~opts.ignore.indexOf(param.flags)) return numSkipped++
 
       // TODO if no flags or aliases, throw error
 
@@ -262,7 +293,8 @@ class Api {
     return opts
   }
 
-  _addType (flags, opts, name) {
+  _addOptionType (flags, opts, name) {
+    this.helpOpts.usageHasOptions = true
     return this.custom(this._getType(flags, opts, name))
   }
 
@@ -298,38 +330,38 @@ class Api {
 
   // specify 'type' (as string) in opts
   option (flags, opts) {
-    return this._addType(flags, opts)
+    return this._addOptionType(flags, opts)
   }
 
   // common individual value types
   boolean (flags, opts) {
-    return this._addType(flags, opts, 'boolean')
+    return this._addOptionType(flags, opts, 'boolean')
   }
 
   string (flags, opts) {
-    return this._addType(flags, opts, 'string')
+    return this._addOptionType(flags, opts, 'string')
   }
 
   number (flags, opts) {
-    return this._addType(flags, opts, 'number')
+    return this._addOptionType(flags, opts, 'number')
   }
 
   // specialty types
   help (flags, opts) {
-    return this._addType(flags, opts, 'helpType')
+    return this._addOptionType(flags, opts, 'helpType')
   }
 
   // multiple value types
   array (flags, opts) {
-    return this._addType(flags, opts, 'array')
+    return this._addOptionType(flags, opts, 'array')
   }
 
   stringArray (flags, opts) {
-    return this._addType(flags, opts, 'array:string')
+    return this._addOptionType(flags, opts, 'array:string')
   }
 
   numberArray (flags, opts) {
-    return this._addType(flags, opts, 'array:number')
+    return this._addOptionType(flags, opts, 'array:number')
   }
 
   // TODO more types
@@ -337,19 +369,12 @@ class Api {
   // once configured with types, parse and exec asynchronously
   // return a Promise<Result>
   parse (args) {
-    // first add types with an implicit command to unknownType
-    this.types.forEach(type => {
-      let implicit = type.implicitCommands
-      if (!implicit || !implicit.length) return undefined
-      this.unknownType.addImplicit(implicit, type)
-    })
-
-    // then init context and kick off recursive type parsing/execution
+    // init context and kick off recursive type parsing/execution
     let context = this.initContext(false).slurpArgs(args)
     return this.parseFromContext(context).then(whenDone => {
       if (context.helpRequested && !context.output) {
         // console.log('api.js parse > adding deferred help')
-        context.addDeferredHelp(false)
+        context.addDeferredHelp(this.initHelpBuffer())
       }
 
       this.types.forEach(type => type.reset())
@@ -359,6 +384,15 @@ class Api {
   }
 
   parseFromContext (context) {
+    // first complete configuration for special types
+    this.types.forEach(type => {
+      if (type.needsApi) type.configure({ api: this.newChild(type.aliases[0]) }, false)
+
+      let implicit = type.implicitCommands
+      if (!implicit || !implicit.length) return undefined
+      this.unknownType.addImplicit(implicit, type)
+    })
+
     // add known types to context
     this.applyTypes(context)
     // run async parsing for all types except unknown
@@ -383,12 +417,7 @@ class Api {
   }
 
   initContext (includeTypes) {
-    let helpOpts = Object.assign({ utils: this.utils }, this.helpOpts)
-    if (typeof helpOpts.usage === 'string') helpOpts.usage = helpOpts.usage.replace('$0', this.name)
-    let context = this.get('context', {
-      utils: this.utils,
-      helpBuffer: this.get('helpBuffer', helpOpts)
-    })
+    let context = this.get('context', { utils: this.utils })
     return includeTypes ? this.applyTypes(context) : context
   }
 
@@ -397,9 +426,14 @@ class Api {
     return context
   }
 
+  initHelpBuffer () {
+    let helpOpts = Object.assign({ utils: this.utils, usageName: this.name }, this.helpOpts)
+    return this.get('helpBuffer', helpOpts)
+  }
+
   // optional convenience methods
   getHelp (opts) {
-    return this.initContext(true).addHelp(opts).output
+    return this.initContext(true).addHelp(this.initHelpBuffer(), opts).output
   }
 }
 

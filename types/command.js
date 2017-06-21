@@ -32,6 +32,10 @@ class TypeCommand extends Type {
     return target
   }
 
+  get needsApi () {
+    return !this._api
+  }
+
   get api () {
     if (!this._api) this._api = require('../api').get()
     return this._api
@@ -110,7 +114,7 @@ class TypeCommand extends Type {
       context.commandHandlerRun = true
       if (context.helpRequested) {
         // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
-        if (!context.output) context.addDeferredHelp(match.implicit)
+        if (!context.output) context.addDeferredHelp(this.api.initHelpBuffer())
         return this.resolve()
       }
       return this.runHandler(context.argv, context)
