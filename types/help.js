@@ -1,14 +1,14 @@
 'use strict'
 
-const TypeBoolean = require('./boolean')
+const TypeImplicitCommand = require('./implicit')
 
-class TypeHelp extends TypeBoolean {
+class TypeHelp extends TypeImplicitCommand {
   static get (opts) {
     return new TypeHelp(opts)
   }
 
   constructor (opts) {
-    super(Object.assign({ desc: 'Show help', implicitCommand: true }, opts))
+    super(Object.assign({ desc: 'Show help' }, opts))
   }
 
   configure (opts, override) {
@@ -16,22 +16,11 @@ class TypeHelp extends TypeBoolean {
     if (typeof override === 'undefined') override = true
     super.configure(opts, override)
 
-    if (override || typeof this._implicitCommand === 'undefined') {
-      this._implicitCommand = 'implicitCommand' in opts ? opts.implicitCommand : this._implicitCommand
-    }
+    // if (override || typeof this._implicitCommand === 'undefined') {
+    //   this._implicitCommand = 'implicitCommand' in opts ? opts.implicitCommand : this._implicitCommand
+    // }
 
     return this
-  }
-
-  get implicitCommands () {
-    if (!this._implicitCommand) return []
-    return this.aliases.filter(alias => alias.length > 1)
-  }
-
-  buildHelpHints (hints) {
-    let commands = this.implicitCommands
-    if (commands.length) hints.push('commands: ' + commands.join(', '))
-    super.buildHelpHints(hints)
   }
 
   validateConfig (utils) {
@@ -45,8 +34,7 @@ class TypeHelp extends TypeBoolean {
   }
 
   implicitCommandFound (source, position, raw, context) {
-    this.setValue(true)
-    this.applySource(source, position, raw)
+    super.implicitCommandFound(source, position, raw, context)
     this.requestHelp(context) // must call this before postParse in case of commands
   }
 
