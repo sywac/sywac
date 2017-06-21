@@ -7,7 +7,7 @@ class Api {
 
   constructor (opts) {
     this.types = []
-    this._helpOpts = {}
+    this._helpOpts = (opts || {}).helpOpts || {}
     this._factories = {
       unknownType: this.getUnknownType,
       context: this.getContext,
@@ -19,7 +19,7 @@ class Api {
       versionType: this.getVersionType,
       array: this.getArray,
       positional: this.getPositional,
-      command: this.getCommand
+      commandType: this.getCommand
     }
     this.configure(opts)
     if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
@@ -38,13 +38,12 @@ class Api {
     // other
     this._name = opts.name || this._name
     this._parentName = opts.parentName || this._parentName // TODO this seems awfully hacky
-    this._helpOpts = opts.helpOpts || this._helpOpts
     return this
   }
 
   newChild (commandName) {
-    // don't need from parent: types, _helpOpts
-    // keep from parent: _factories, utils, name (plus command chain),
+    // don't need from parent: types
+    // keep from parent: _factories, utils, name (plus command chain)
     return new Api({
       factories: this._factories,
       utils: this.utils,
@@ -143,7 +142,13 @@ class Api {
     return require('./types/command').get(opts)
   }
 
-  // API
+  // help text
+  preface (icon, slogan) {
+    this.helpOpts.icon = icon
+    this.helpOpts.slogan = slogan
+    return this
+  }
+
   usage (usage) {
     if (typeof usage === 'string') this.helpOpts.usage = usage
     else {
@@ -161,6 +166,24 @@ class Api {
     return this
   }
 
+  groupOrder (orderArray) {
+    if (Array.isArray(orderArray) || typeof orderArray === 'undefined') this.helpOpts.groupOrder = orderArray
+    return this
+  }
+
+  epilogue (epilogue) {
+    this.helpOpts.epilogue = epilogue
+    return this
+  }
+
+  outputSettings (settings) {
+    ['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth'].forEach(opt => {
+      if (opt in settings) this.helpOpts[opt] = settings[opt]
+    })
+    return this
+  }
+
+  // complex types
   command (dsl, opts) {
     opts = opts || {}
 
@@ -189,7 +212,7 @@ class Api {
 
     this.helpOpts.usageHasCommand = true
 
-    return this.custom(this.get('command', opts))
+    return this.custom(this.get('commandType', opts))
   }
 
   positional (dsl, opts) {

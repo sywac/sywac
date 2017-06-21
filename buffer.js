@@ -129,7 +129,7 @@ class Buffer {
       includeEpilogue: true
     }, opts)
     let str = this.appendSection('', !!opts.includePreface && this.icon, this.sectionSep)
-    if (opts.includePreface) str = this.appendSection(str, this.slogan, this.sectionSep)
+    if (opts.includePreface) str = this.appendSection(str, this.slogan, this.lineSep)
     if (opts.includeUsage) str = this.appendSection(str, this.usage, this.sectionSep)
     if (opts.includeGroups) str = this.appendSection(str, this.groupsContent(), this.sectionSep)
     if (opts.includeEpilogue) str = this.appendSection(str, this.epilogue, this.sectionSep)
