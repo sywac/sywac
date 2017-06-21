@@ -249,6 +249,7 @@ class Api {
       if (!(param.description || param.desc) && (opts.paramsDescription || opts.paramsDesc)) {
         param.desc = [].concat(opts.paramsDescription || opts.paramsDesc)[index - numSkipped]
       }
+      if (!param.group && opts.paramsGroup) param.group = opts.paramsGroup
 
       // don't apply command desc to positional params (via configure calls below)
       let optsDescription = opts.description

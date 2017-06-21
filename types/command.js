@@ -26,7 +26,7 @@ class TypeCommand extends Type {
   }
 
   _assignPositionalOpts (target, source) {
-    ['params', 'paramsDescription', 'paramsDesc', 'ignore'].forEach(opt => {
+    ['params', 'paramsDescription', 'paramsDesc', 'paramsGroup', 'ignore'].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
     return target
