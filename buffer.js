@@ -146,8 +146,8 @@ class Buffer {
     }
     let types
     order.forEach(heading => {
-      types = groupsLeft[heading] // array of types
-      if (!types || !types.length) {
+      types = (groupsLeft[heading] || []).filter(type => !type.isHidden) // array of types
+      if (!types.length) {
         delete groupsLeft[heading]
         return undefined
       }
@@ -155,7 +155,6 @@ class Buffer {
       // first determine width needed for all flags
       let flagsWidth = 0
       types.forEach(type => {
-        if (type.isHidden) return undefined
         if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
       })
 
@@ -246,7 +245,7 @@ class Buffer {
   }
 
   appendTypeSimple (str, type, flagsWidth) {
-    if (type.isHidden || (!type.helpFlags && !type.helpDesc && !type.helpHints)) return str
+    if (!type.helpFlags && !type.helpDesc && !type.helpHints) return str
 
     let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
     let flag = type.helpFlags
