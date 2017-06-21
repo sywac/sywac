@@ -16,6 +16,7 @@ class Api {
       string: this.getString,
       number: this.getNumber,
       helpType: this.getHelpType,
+      versionType: this.getVersionType,
       array: this.getArray,
       positional: this.getPositional,
       command: this.getCommand
@@ -124,6 +125,10 @@ class Api {
 
   getHelpType (opts) {
     return require('./types/help').get(opts)
+  }
+
+  getVersionType (opts) {
+    return require('./types/version').get(opts)
   }
 
   getArray (opts) {
@@ -351,6 +356,10 @@ class Api {
     return this._addOptionType(flags, opts, 'helpType')
   }
 
+  version (flags, opts) {
+    return this._addOptionType(flags, opts, 'versionType')
+  }
+
   // multiple value types
   array (flags, opts) {
     return this._addOptionType(flags, opts, 'array')
@@ -375,6 +384,8 @@ class Api {
       if (context.helpRequested && !context.output) {
         // console.log('api.js parse > adding deferred help')
         context.addDeferredHelp(this.initHelpBuffer())
+      } else if (context.versionRequested && !context.output) {
+        context.addDeferredVersion()
       }
 
       this.types.forEach(type => type.reset())

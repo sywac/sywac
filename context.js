@@ -23,6 +23,7 @@ class Context {
     // other
     this.commandHandlerRun = false
     this.helpRequested = false
+    this.versionRequested = false
   }
 
   get utils () {
@@ -114,7 +115,7 @@ class Context {
   }
 
   matchCommand (level, aliases, isDefault) {
-    if (!this.argv._) return false // TODO what to do without an unknownType?
+    if (!this.argv._ || this.versionRequested) return false // TODO what to do without an unknownType?
     // first determine if argv._ starts with ANY known command alias
     // if there's a match and it's NOT one of the given aliases, return false
     // if there's a match and it IS one of the given aliases, return true
@@ -156,6 +157,34 @@ class Context {
 
   addHelp (helpBuffer, opts) {
     return this.deferHelp(opts).addDeferredHelp(helpBuffer)
+  }
+
+  deferVersion (opts) {
+    this.versionRequested = opts || {}
+    return this
+  }
+
+  addDeferredVersion () {
+    if (!(this.versionRequested && this.versionRequested.version)) {
+      const path = require('path')
+      const fs = require('fs')
+      let dir = path.dirname(require.main.filename)
+      const root = path.parse(dir).root
+      let version
+      while (dir !== root) {
+        try {
+          version = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).version
+          if (version) break
+        } catch (_) {
+          dir = path.dirname(dir)
+        }
+      }
+      if (!this.versionRequested) this.versionRequested = {}
+      this.versionRequested.version = version || 'Version unknown'
+    }
+    if (typeof this.versionRequested.version === 'function') this.output = this.versionRequested.version()
+    else this.output = this.versionRequested.version
+    return this
   }
 
   populateArgv (typeResults) {
