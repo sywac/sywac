@@ -1,12 +1,9 @@
 'use strict'
 
+const Api = require('../api')
 const Type = require('./type')
 
 class TypeCommand extends Type {
-  static get DEFAULT_INDICATOR () {
-    return '*'
-  }
-
   static get (opts) {
     return new TypeCommand(opts)
   }
@@ -42,12 +39,12 @@ class TypeCommand extends Type {
   }
 
   get isDefault () {
-    if (typeof this._default !== 'boolean') this._default = this.aliases.some(alias => alias === TypeCommand.DEFAULT_INDICATOR)
+    if (typeof this._default !== 'boolean') this._default = this.aliases.some(alias => alias === Api.DEFAULT_COMMAND_INDICATOR)
     return this._default
   }
 
   get validAliases () {
-    if (!Array.isArray(this._validAliases)) this._validAliases = this.aliases.filter(alias => alias !== TypeCommand.DEFAULT_INDICATOR)
+    if (!Array.isArray(this._validAliases)) this._validAliases = this.aliases.filter(alias => alias !== Api.DEFAULT_COMMAND_INDICATOR)
     return this._validAliases
   }
 
@@ -112,7 +109,7 @@ class TypeCommand extends Type {
       // only run innermost command handler
       if (context.commandHandlerRun) return this.resolve()
       context.commandHandlerRun = true
-      if (context.helpRequested) {
+      if (context.helpRequested || context.messages.length) {
         // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
         if (!context.output) context.addDeferredHelp(this.api.initHelpBuffer())
         return this.resolve()

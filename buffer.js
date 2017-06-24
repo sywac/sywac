@@ -36,8 +36,8 @@ class Buffer {
     // - description
     // - hints
     this._epilogue = opts.epilogue || '' // "See alainasaservice.com for more details"
-    this._error = opts.error
-    this._errorMsg = opts.errorMsg || ''
+
+    this._messages = opts.messages || []
     this._maxWidth = opts.maxWidth || Math.min(process.stdout.columns || 100, 100)
     // dependencies
     this._utils = opts.utils
@@ -108,6 +108,14 @@ class Buffer {
 
   get groupOrder () {
     return this._groupOrder
+  }
+
+  get messages () {
+    return this._messages
+  }
+
+  set messages (m) {
+    this._messages = m
   }
 
   get epilogue () {
@@ -241,7 +249,7 @@ class Buffer {
   }
 
   errorContent () {
-    return '' // TODO
+    return this.messages.join(this.lineSep)
   }
 
   appendTypeSimple (str, type, flagsWidth) {

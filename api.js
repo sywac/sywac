@@ -1,13 +1,18 @@
 'use strict'
 
 class Api {
+  static get DEFAULT_COMMAND_INDICATOR () {
+    return '*'
+  }
+
   static get (opts) {
     return new Api(opts)
   }
 
   constructor (opts) {
+    opts = opts || {}
     this.types = []
-    this._helpOpts = (opts || {}).helpOpts || {}
+    this._helpOpts = opts.helpOpts || {}
     this._factories = {
       unknownType: this.getUnknownType,
       context: this.getContext,
@@ -21,6 +26,7 @@ class Api {
       positional: this.getPositional,
       commandType: this.getCommand
     }
+    this._showHelpByDefault = 'showHelpByDefault' in opts ? opts.showHelpByDefault : false
     this.configure(opts)
     if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
   }
@@ -49,7 +55,8 @@ class Api {
       utils: this.utils,
       name: this.name + ' ' + commandName,
       parentName: this.name,
-      helpOpts: this._assignHelpOpts({}, this.helpOpts)
+      helpOpts: this._assignHelpOpts({}, this.helpOpts),
+      showHelpByDefault: this._showHelpByDefault
     })
   }
 
@@ -183,8 +190,18 @@ class Api {
     return this
   }
 
+  showHelpByDefault (boolean) {
+    this._showHelpByDefault = boolean !== false
+    return this
+  }
+
   // complex types
   command (dsl, opts) {
+    this._internalCommand(dsl, opts)
+    return this
+  }
+
+  _internalCommand (dsl, opts) {
     opts = opts || {}
 
     // argument shuffling
@@ -212,7 +229,9 @@ class Api {
 
     this.helpOpts.usageHasCommand = true
 
-    return this.custom(this.get('commandType', opts))
+    const commandType = this.get('commandType', opts)
+    this.custom(commandType)
+    return commandType
   }
 
   positional (dsl, opts) {
@@ -405,28 +424,51 @@ class Api {
     // init context and kick off recursive type parsing/execution
     let context = this.initContext(false).slurpArgs(args)
     return this.parseFromContext(context).then(whenDone => {
-      if (context.helpRequested && !context.output) {
-        // console.log('api.js parse > adding deferred help')
+      if (
+        (context.helpRequested && !context.output) ||
+        (this._showHelpByDefault && !context.details.args.length && !context.output && !context.commandHandlerRun)
+      ) {
+        if (!context.helpRequested) context.deferHelp() // make sure help is seen as requested
         context.addDeferredHelp(this.initHelpBuffer())
       } else if (context.versionRequested && !context.output) {
         context.addDeferredVersion()
+      } else if (context.messages.length && !context.output) {
+        context.addDeferredHelp(this.initHelpBuffer())
       }
-
-      this.types.forEach(type => type.reset())
-      if (this.unknownType) this.unknownType.reset()
+      return whenDone
+    }).catch(err => {
+      context.unexpectedError(err)
+    }).then(whenDone => {
+      try {
+        this.types.forEach(type => type.reset())
+        if (this.unknownType) this.unknownType.reset()
+      } catch (err) {
+        context.unexpectedError(err)
+      }
       return context.toResult()
     })
   }
 
   parseFromContext (context) {
     // first complete configuration for special types
+    let hasCommands = false
+    let hasDefaultCommand = false
     this.types.forEach(type => {
       if (type.needsApi) type.configure({ api: this.newChild(type.aliases[0]) }, false)
 
       let implicit = type.implicitCommands
-      if (!implicit || !implicit.length) return undefined
-      this.unknownType.addImplicit(implicit, type)
+      if (implicit && implicit.length) this.unknownType.addImplicit(implicit, type)
+
+      if (type.datatype === 'command') {
+        hasCommands = true
+        if (type.isDefault) hasDefaultCommand = true
+      }
     })
+    if (this._showHelpByDefault && hasCommands && !hasDefaultCommand) {
+      this._internalCommand(Api.DEFAULT_COMMAND_INDICATOR, (argv, context) => {
+        context.deferHelp().addDeferredHelp(this.initHelpBuffer())
+      }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR) }, false)
+    }
 
     // add known types to context
     this.applyTypes(context)

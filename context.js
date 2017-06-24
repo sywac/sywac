@@ -1,5 +1,7 @@
 'use strict'
 
+const format = require('util').format
+
 class Context {
   static get (opts) {
     return new Context(opts)
@@ -19,7 +21,8 @@ class Context {
     this.output = ''
     this.argv = /* opts.argv || */ {}
     this.details = /* opts.details || */ { args: [], types: [] }
-    // this.errors = []
+    this.errors = []
+    this.messages = []
     // other
     this.commandHandlerRun = false
     this.helpRequested = false
@@ -29,11 +32,6 @@ class Context {
   get utils () {
     if (!this._utils) this._utils = require('./lib/utils').get()
     return this._utils
-  }
-
-  pushLevel (level, types) {
-    this.types[level] = types
-    return this
   }
 
   slurpArgs (args) {
@@ -114,6 +112,22 @@ class Context {
     return kvArray
   }
 
+  pushLevel (level, types) {
+    this.types[level] = types
+    return this
+  }
+
+  unexpectedError (err) {
+    this.errors.push(err)
+    this.output = format(err)
+    this.code++
+  }
+
+  cliMessage (msg) {
+    // do NOT modify this.code here - the messages will be disregarded if help is requested
+    this.messages.push(format.apply(null, arguments))
+  }
+
   matchCommand (level, aliases, isDefault) {
     if (!this.argv._ || this.versionRequested) return false // TODO what to do without an unknownType?
     // first determine if argv._ starts with ANY known command alias
@@ -150,6 +164,11 @@ class Context {
     }
     // TODO add examples as a group
     helpBuffer.groups = groups
+
+    if (!this.helpRequested) {
+      helpBuffer.messages = this.messages
+      this.code += this.messages.length
+    }
 
     // add/set output to helpBuffer.toString()
     this.output = helpBuffer.toString(this.helpRequested)
@@ -208,6 +227,7 @@ class Context {
     return {
       code: this.code,
       output: this.output,
+      errors: this.errors,
       argv: this.argv,
       details: this.details
     }

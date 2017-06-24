@@ -235,7 +235,7 @@ class Type {
   // async validation called from parse
   validateParsed (context) {
     // TODO do validation here, add any errors to context
-    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) console.log('Missing required arg:', this.aliases)
+    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) context.cliMessage('Missing required arg:', this.aliases)
     return this.resolve()
   }
 
