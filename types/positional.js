@@ -9,7 +9,6 @@ class TypePositional extends TypeWrapper {
 
   constructor (opts) {
     super(Object.assign({ acceptFlags: false, variadic: false }, opts || {}))
-    // TODO flags in positional and flags in elementType should be different
   }
 
   configure (opts, override) {
@@ -31,6 +30,10 @@ class TypePositional extends TypeWrapper {
     return this._group || 'Arguments:'
   }
 
+  buildHelpHints (hints) {
+    this.elementType.buildHelpHints(hints)
+  }
+
   withParent (apiName) {
     super.withParent(apiName)
     this.elementType.withParent(apiName)
@@ -47,14 +50,8 @@ class TypePositional extends TypeWrapper {
     // only need to parse for flags
     // otherwise will be populated by unknownType
     if (this.acceptFlags) {
-      // first pass of parsing checks for flags
-      // temporarily disable validation for this.elementType
-      // TODO this is totally hacky
-      let r = this.elementType.isRequired
-      return this.elementType.required(false).parse(context).then(whenDone => {
-        this.elementType.required(r)
-        return super.resolve()
-      })
+      // first pass of parsing checks for flags with validation disabled
+      return this.elementType._internalParse(context, false).then(whenDone => this.resolve())
     }
     return super.resolve()
   }

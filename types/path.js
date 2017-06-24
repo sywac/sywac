@@ -1,0 +1,117 @@
+'use strict'
+
+const TypeString = require('./string')
+
+class TypePath extends TypeString {
+  static get (opts) {
+    return new TypePath(opts)
+  }
+
+  constructor (opts) {
+    super(Object.assign({
+      dirAllowed: true,
+      fileAllowed: true,
+      normalize: false,
+      asObject: false,
+      posixOnly: false,
+      win32Only: false
+    }, opts))
+  }
+
+  configure (opts, override) {
+    opts = opts || {}
+    if (typeof override === 'undefined') override = true
+    super.configure(opts, override)
+
+    // booleans with a default value
+    if (override || typeof this._dirAllowed === 'undefined') this._dirAllowed = 'dirAllowed' in opts ? opts.dirAllowed : this._dirAllowed
+    if (override || typeof this._fileAllowed === 'undefined') this._fileAllowed = 'fileAllowed' in opts ? opts.fileAllowed : this._fileAllowed
+    if (override || typeof this._normalize === 'undefined') this._normalize = 'normalize' in opts ? opts.normalize : this._normalize
+    if (override || typeof this._asObject === 'undefined') this._asObject = 'asObject' in opts ? opts.asObject : this._asObject
+    if (override || typeof this._posixOnly === 'undefined') this._posixOnly = 'posixOnly' in opts ? opts.posixOnly : this._posixOnly
+    if (override || typeof this._win32Only === 'undefined') this._win32Only = 'win32Only' in opts ? opts.win32Only : this._win32Only
+    // nullable boolean, no default value
+    if (override || typeof this._mustExist === 'undefined') this._mustExist = 'mustExist' in opts ? opts.mustExist : this._mustExist
+
+    return this
+  }
+
+  get datatype () {
+    if (!this._dirAllowed) return 'file'
+    if (!this._fileAllowed) return 'dir'
+    return 'path'
+  }
+
+  get fulltype () {
+    const t = this.datatype
+    return t === 'dir' ? 'directory' : t
+  }
+
+  buildHelpHints (hints) {
+    super.buildHelpHints(hints)
+    if (typeof this._mustExist === 'boolean') hints.push(this._mustExist ? 'must exist' : 'must not exist')
+  }
+
+  get pathLib () {
+    if (!this._pathLib) this._pathLib = require('path')
+    if (this._posixOnly) return this._pathLib.posix
+    if (this._win32Only) return this._pathLib.win32
+    return this._pathLib
+  }
+
+  get fsLib () {
+    if (!this._fsLib) this._fsLib = require('fs')
+    return this._fsLib
+  }
+
+  validateParsed (context) {
+    return super.validateParsed(context).then(whenDone => {
+      const promise = Promise.resolve(whenDone)
+
+      // specifying fileAllowed or dirAllowed WITHOUT mustExist is just commentary/suggestive
+      if (this._value && typeof this._mustExist === 'boolean') {
+        return new Promise(resolve => {
+          this.fsLib.stat(this._value, (err, stats) => {
+            if (err) this.handleStatErr(err, context)
+            else this.handleStats(stats, context)
+            resolve(promise)
+          })
+        })
+      }
+
+      return promise
+    })
+  }
+
+  handleStatErr (err, context) {
+    const msgMap = {
+      'EACCES_true': 'Cannot access %s: %s',
+      'EACCES_false': 'The %s already exists and is inaccessible: %s',
+      'ENOENT_true': 'The %s does not exist: %s'
+    }
+    let msg = msgMap[err.code + '_' + this._mustExist]
+    if (msg) context.cliMessage(msg, this.fulltype, this._value)
+  }
+
+  handleStats (stats, context) {
+    let msg
+    const actualType = stats.isFile() ? 'file' : 'directory'
+    const wantedType = this.fulltype
+    if (!this._mustExist) {
+      if (wantedType === 'path' || actualType === wantedType) msg = 'The %s already exists: %s'
+      else msg = 'The path exists and is a %s: %s'
+    } else if (wantedType !== 'path' && actualType !== wantedType) {
+      msg = 'The path is a %s: %s'
+    }
+    if (msg) context.cliMessage(msg, actualType, this._value)
+  }
+
+  get value () {
+    let value = super.value
+    if (value && this._normalize) value = this.pathLib.normalize(value)
+    if (value && this._asObject) value = this.pathLib.parse(value)
+    return value
+  }
+}
+
+module.exports = TypePath

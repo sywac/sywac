@@ -192,6 +192,10 @@ class Type {
 
   // async parsing
   parse (context) {
+    return this._internalParse(context, true)
+  }
+
+  _internalParse (context, validate) {
     // console.log('parse', this.constructor.name, this.helpFlags)
     let lastKeyMatchesAlias = false
     let anyKeyMatchedAlias = false
@@ -229,13 +233,13 @@ class Type {
       this._source = Type.SOURCE_DEFAULT
     }
 
-    return this.validateParsed(context)
+    return validate ? this.validateParsed(context) : this.resolve()
   }
 
   // async validation called from parse
   validateParsed (context) {
     // TODO do validation here, add any errors to context
-    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) context.cliMessage('Missing required arg:', this.aliases)
+    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) context.cliMessage('Missing required argument:', this.aliases)
     return this.resolve()
   }
 

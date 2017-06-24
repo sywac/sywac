@@ -14,15 +14,22 @@ class Api {
     this.types = []
     this._helpOpts = opts.helpOpts || {}
     this._factories = {
+      // meta
       unknownType: this.getUnknownType,
       context: this.getContext,
       helpBuffer: this.getHelpBuffer,
+      // common types
       boolean: this.getBoolean,
       string: this.getString,
       number: this.getNumber,
+      path: this.getPath,
+      file: this.getFile,
+      dir: this.getDir,
+      array: this.getArray,
+      // specialty types
       helpType: this.getHelpType,
       versionType: this.getVersionType,
-      array: this.getArray,
+      // advanced types
       positional: this.getPositional,
       commandType: this.getCommand
     }
@@ -105,6 +112,7 @@ class Api {
     return null
   }
 
+  // meta factories
   getUnknownType (opts) {
     return require('./types/unknown').get(opts)
   }
@@ -117,6 +125,7 @@ class Api {
     return require('./buffer').get(opts)
   }
 
+  // common type factories
   getBoolean (opts) {
     return require('./types/boolean').get(opts)
   }
@@ -129,6 +138,23 @@ class Api {
     return require('./types/number').get(opts)
   }
 
+  getPath (opts) {
+    return require('./types/path').get(opts)
+  }
+
+  getFile (opts) {
+    return this.getPath(Object.assign({ dirAllowed: false }, opts))
+  }
+
+  getDir (opts) {
+    return this.getPath(Object.assign({ fileAllowed: false }, opts))
+  }
+
+  getArray (opts) {
+    return require('./types/array').get(opts)
+  }
+
+  // specialty type factories
   getHelpType (opts) {
     return require('./types/help').get(opts)
   }
@@ -137,10 +163,7 @@ class Api {
     return require('./types/version').get(opts)
   }
 
-  getArray (opts) {
-    return require('./types/array').get(opts)
-  }
-
+  // advanced type factories
   getPositional (opts) {
     return require('./types/positional').get(opts)
   }
@@ -392,6 +415,18 @@ class Api {
 
   number (flags, opts) {
     return this._addOptionType(flags, opts, 'number')
+  }
+
+  path (flags, opts) {
+    return this._addOptionType(flags, opts, 'path')
+  }
+
+  file (flags, opts) {
+    return this._addOptionType(flags, opts, 'file')
+  }
+
+  dir (flags, opts) {
+    return this._addOptionType(flags, opts, 'dir')
   }
 
   // specialty types
