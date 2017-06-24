@@ -418,8 +418,21 @@ class Api {
 
   // TODO more types
 
-  // once configured with types, parse and exec asynchronously
-  // return a Promise<Result>
+  // parse and exit if there's output (e.g. help text) or a non-zero code; otherwise resolves to argv
+  // useful for standard CLIs
+  parseAndExit (args) {
+    return this.parse(args).then(result => {
+      if (result.output) {
+        console.log(result.output)
+        process.exit(result.code)
+      }
+      if (result.code !== 0) process.exit(result.code)
+      return result.argv
+    })
+  }
+
+  // parse and resolve to a context result (never exits)
+  // useful for chatbots or checking results
   parse (args) {
     // init context and kick off recursive type parsing/execution
     let context = this.initContext(false).slurpArgs(args)
@@ -449,6 +462,7 @@ class Api {
     })
   }
 
+  // recursive, meant to be used internally
   parseFromContext (context) {
     // first complete configuration for special types
     let hasCommands = false
