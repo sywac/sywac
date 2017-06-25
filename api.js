@@ -25,6 +25,7 @@ class Api {
       path: this.getPath,
       file: this.getFile,
       dir: this.getDir,
+      'enum': this.getEnum,
       array: this.getArray,
       // specialty types
       helpType: this.getHelpType,
@@ -148,6 +149,10 @@ class Api {
 
   getDir (opts) {
     return this.getPath(Object.assign({ fileAllowed: false }, opts))
+  }
+
+  getEnum (opts) {
+    return require('./types/enum').get(opts)
   }
 
   getArray (opts) {
@@ -427,6 +432,10 @@ class Api {
 
   dir (flags, opts) {
     return this._addOptionType(flags, opts, 'dir')
+  }
+
+  enumeration (flags, opts) {
+    return this._addOptionType(flags, opts, 'enum')
   }
 
   // specialty types
