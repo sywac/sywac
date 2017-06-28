@@ -13,8 +13,8 @@ class TypePath extends TypeString {
       fileAllowed: true,
       normalize: false,
       asObject: false,
-      posixOnly: false,
-      win32Only: false
+      asPosix: false,
+      asWin32: false
     }, opts))
   }
 
@@ -28,8 +28,8 @@ class TypePath extends TypeString {
     if (override || typeof this._fileAllowed === 'undefined') this._fileAllowed = 'fileAllowed' in opts ? opts.fileAllowed : this._fileAllowed
     if (override || typeof this._normalize === 'undefined') this._normalize = 'normalize' in opts ? opts.normalize : this._normalize
     if (override || typeof this._asObject === 'undefined') this._asObject = 'asObject' in opts ? opts.asObject : this._asObject
-    if (override || typeof this._posixOnly === 'undefined') this._posixOnly = 'posixOnly' in opts ? opts.posixOnly : this._posixOnly
-    if (override || typeof this._win32Only === 'undefined') this._win32Only = 'win32Only' in opts ? opts.win32Only : this._win32Only
+    if (override || typeof this._asPosix === 'undefined') this._asPosix = 'asPosix' in opts ? opts.asPosix : this._asPosix
+    if (override || typeof this._asWin32 === 'undefined') this._asWin32 = 'asWin32' in opts ? opts.asWin32 : this._asWin32
     // nullable boolean, no default value
     if (override || typeof this._mustExist === 'undefined') this._mustExist = 'mustExist' in opts ? opts.mustExist : this._mustExist
 
@@ -54,8 +54,8 @@ class TypePath extends TypeString {
 
   get pathLib () {
     if (!this._pathLib) this._pathLib = require('path')
-    if (this._posixOnly) return this._pathLib.posix
-    if (this._win32Only) return this._pathLib.win32
+    if (this._asPosix) return this._pathLib.posix
+    if (this._asWin32) return this._pathLib.win32
     return this._pathLib
   }
 
