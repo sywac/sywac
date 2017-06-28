@@ -50,7 +50,7 @@ class TypeEnum extends TypeString {
           return c === value
         })
       ) {
-        context.cliMessage('Value "%s" is invalid for argument %j. Choices are: %s', this.value, this.aliases, this.choices.join(', '))
+        context.cliMessage('Value "%s" is invalid for argument %s. Choices are: %s', this.value, this.aliases.join(' or '), this.choices.join(', '))
       }
       return this.resolve()
     })
