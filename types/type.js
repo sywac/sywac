@@ -115,6 +115,8 @@ class Type {
   }
 
   buildHelpHints (hintsArray) {
+    // required
+    if (this.isRequired) hintsArray.push('required')
     // datatype
     if (this.datatype) hintsArray.push(this.datatype)
     // default value
