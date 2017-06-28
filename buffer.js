@@ -54,6 +54,7 @@ class Buffer {
 
   get sectionSep () {
     return this._sectionSep
+    // return this.lineSep + new Array(this.maxWidth + 1).join('-') + this.lineSep // just checking
   }
 
   get pad () {
@@ -165,18 +166,21 @@ class Buffer {
       types.forEach(type => {
         if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
       })
+      let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
 
       if (heading) str = this.appendSection(str, heading, this.sectionSep)
 
+      // if any types in this group require multi line, then just do all of them multi line
+      let multiline = types.some(type => this.determineLines(type, flagsWidth, maxWidth) > 1)
+
       // then add each line:
       // indent + flags + padding + indent + ((desc + padding + hints) || (descMultiline + hintsMultiline))
-      // let p = true
+      let first = true
       types.forEach(type => {
-        // if (p) {
-        //   p = false
-        //   str += '\n' + new Array(this.maxWidth + 1).join('.')
-        // }
-        str = this.appendTypeSimple(str, type, flagsWidth)
+        // str = this.appendTypeSimple(str, type, flagsWidth)
+        if (multiline && str && !first) str += this.lineSep
+        first = false
+        str = multiline ? this.appendTypeMultiLine(str, type, flagsWidth, maxWidth) : this.appendTypeSingleLine(str, type, flagsWidth, maxWidth)
       })
 
       delete groupsLeft[heading]
@@ -250,6 +254,83 @@ class Buffer {
 
   errorContent () {
     return this.messages.join(this.lineSep)
+  }
+
+  determineLines (type, flagsWidth, maxWidth) {
+    if (!type.helpFlags && !type.helpDesc && !type.helpHints) return 0
+
+    let singleLineWidth = 0
+    if (type.helpFlags) singleLineWidth += this.indent.length + flagsWidth
+    if (type.helpDesc) singleLineWidth += this.indent.length + this.utils.stripAnsi(type.helpDesc).length
+    if (type.helpHints) singleLineWidth += this.indent.length + this.utils.stripAnsi(type.helpHints).length
+
+    return singleLineWidth <= maxWidth ? 1 : 2
+  }
+
+  appendTypeSingleLine (str, type, flagsWidth, maxWidth) {
+    let flag = type.helpFlags
+    let desc = type.helpDesc
+    let hint = type.helpHints
+    let line = ''
+
+    if (flag) {
+      line += this.indent + flag + new Array(this.pos(flagsWidth, flag)).join(this.pad)
+    } else if (flagsWidth > 0) {
+      line += this.indent + new Array(flagsWidth + 1).join(this.pad)
+    }
+    if (desc) {
+      line += this.indent + desc
+    }
+    if (hint) {
+      line += new Array(this.pos(maxWidth, line + hint)).join(this.pad)
+      line += hint
+    }
+
+    return this.appendSection(str, line, this.lineSep)
+  }
+
+  appendTypeMultiLine (str, type, flagsWidth, maxWidth) {
+    let flag = type.helpFlags
+    let desc = type.helpDesc
+    let hint = type.helpHints
+    let line = ''
+
+    let leftOverWidth = maxWidth
+    if (flag) {
+      line += this.indent + flag + new Array(this.pos(flagsWidth, flag)).join(this.pad)
+    } else if (flagsWidth > 0) {
+      line += this.indent + new Array(flagsWidth + 1).join(this.pad)
+    }
+    if (line) leftOverWidth -= this.utils.stripAnsi(line).length
+    if (desc || hint) leftOverWidth -= this.indent.length
+    if (desc) {
+      let chunks = this.chunk(desc, leftOverWidth)
+      desc = chunks.shift()
+      let first = true
+      while (desc) {
+        if (!first) line = ''
+        if (!first && flagsWidth > 0) line += this.indent + new Array(flagsWidth + 1).join(this.pad)
+        first = false
+        line += this.indent + desc
+        str = this.appendSection(str, line, this.lineSep)
+        desc = chunks.shift()
+      }
+      line = ''
+    }
+    if (hint) {
+      let chunks = this.chunk(hint, leftOverWidth)
+      hint = chunks.shift()
+      let first = !type.helpDesc
+      while (hint) {
+        if (!first) line = ''
+        if (!first && flagsWidth > 0) line += this.indent + new Array(flagsWidth + 1).join(this.pad)
+        first = false
+        line += this.indent + hint
+        str = this.appendSection(str, line, this.lineSep)
+        hint = chunks.shift()
+      }
+    }
+    return str
   }
 
   appendTypeSimple (str, type, flagsWidth) {
