@@ -7,6 +7,9 @@
     "lint": "standard",
     "test": "standard && tap --cov test/*.js"
   },
+  "engines": {
+    "node": ">=4"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nexdrew/sywac.git"
