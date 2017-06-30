@@ -314,18 +314,18 @@ class Type {
       // populated via config
       aliases: this.aliases,
       datatype: this.datatype,
-      defaultVal: this.defaultVal,
-      isRequired: this.isRequired,
+      // defaultVal: this.defaultVal,
+      // isRequired: this.isRequired,
       helpFlags: this.helpFlags,
       helpDesc: this.helpDesc,
       helpHints: this.helpHints,
       helpGroup: this.helpGroup,
-      isHidden: this.isHidden,
+      isHidden: this.isHidden
       // populated via parse
-      value: this.value,
-      source: this.source,
-      position: this.position,
-      raw: this.raw
+      // value: this.value,
+      // source: this.source,
+      // position: this.position,
+      // raw: this.raw
     }
   }
 
