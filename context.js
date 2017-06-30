@@ -14,13 +14,13 @@ class Context {
     // config
     this.types = {}
     // args to parse per type
-    this.args = /* opts.args || */ []
-    this.slurped = /* opts.slurped || */ []
+    this.args = []
+    this.slurped = []
     // results of parsing and validation
     this.code = 0
     this.output = ''
-    this.argv = /* opts.argv || */ {}
-    this.details = /* opts.details || */ { args: [], types: [] }
+    this.argv = {}
+    this.details = { args: [], types: [] }
     this.errors = []
     this.messages = []
     // other
@@ -152,7 +152,6 @@ class Context {
 
   addDeferredHelp (helpBuffer) {
     let groups = {}
-    // TODO something about group order here
     let mappedLevels = Object.keys(this.types)
     let mappedLevelsLength = mappedLevels.length
     let currentLevel
@@ -162,7 +161,6 @@ class Context {
         if (currentLevel === helpBuffer._usageName || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
       })
     }
-    // TODO add examples as a group
     helpBuffer.groups = groups
 
     if (!this.helpRequested) {

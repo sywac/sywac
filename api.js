@@ -71,7 +71,8 @@ class Api {
   _assignHelpOpts (target, source) {
     [
       'lineSep', 'sectionSep', 'pad', 'indent', 'split', 'icon', 'slogan',
-      'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth'
+      'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth',
+      'examplePrefix', 'exampleOrder'
     ].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
@@ -206,13 +207,31 @@ class Api {
     return this
   }
 
+  example (example, opts) {
+    opts = opts || {}
+    if (typeof example === 'string') {
+      opts.flags = example
+    } else if (!Array.isArray(example) && typeof example === 'object') {
+      opts = example
+    }
+    let group = opts.group || 'Examples:'
+    if (!this.helpOpts.examples) this.helpOpts.examples = {}
+    this.helpOpts.examples[group] = (this.helpOpts.examples[group] || []).concat(opts)
+    return this
+  }
+
+  exampleOrder (orderArray) {
+    if (Array.isArray(orderArray) || typeof orderArray === 'undefined') this.helpOpts.exampleOrder = orderArray
+    return this
+  }
+
   epilogue (epilogue) {
     this.helpOpts.epilogue = epilogue
     return this
   }
 
   outputSettings (settings) {
-    ['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth'].forEach(opt => {
+    ['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth', 'examplePrefix'].forEach(opt => {
       if (opt in settings) this.helpOpts[opt] = settings[opt]
     })
     return this

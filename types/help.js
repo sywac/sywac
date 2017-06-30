@@ -22,7 +22,7 @@ class TypeHelp extends TypeImplicitCommand {
   }
 
   _assignBufferOpts (target, source) {
-    ['includePreface', 'includeUsage', 'includeGroups', 'includeEpilogue'].forEach(opt => {
+    ['includePreface', 'includeUsage', 'includeGroups', 'includeExamples', 'includeEpilogue'].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
     return target

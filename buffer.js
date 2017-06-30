@@ -7,18 +7,21 @@ class Buffer {
 
   constructor (opts) {
     opts = opts || {}
+    // output settings
     this._lineSep = opts.lineSep || '\n'
     this._sectionSep = opts.sectionSep || this._lineSep + this._lineSep
     this._pad = opts.pad || ' '
     this._indent = opts.indent || this._pad + this._pad
     this._split = opts.split || /\s/g // note that global is needed for the chunk method and doesn't affect split() usage
-    // stuff
-    this._icon = opts.icon || ''     // think alain
-    this._slogan = opts.slogan || '' // "Need a product name? Ask alain!"
-
-    this._usage = opts.usage || ''   // "Usage: $0 [options] <command>"
+    this._maxWidth = opts.maxWidth || Math.min(process.stdout.columns || 100, 100)
+    this._examplePrefix = 'examplePrefix' in opts ? opts.examplePrefix : '$ '
+    // preface
+    this._icon = opts.icon || ''
+    this._slogan = opts.slogan || ''
+    // usage
+    this._usage = opts.usage || ''
     this._usageName = opts.usageName || ''
-    this._usagePrefix = opts.usagePrefix || 'Usage: $0'
+    this._usagePrefix = 'usagePrefix' in opts ? opts.usagePrefix : 'Usage: $0'
     this._usageHasCommand = 'usageHasCommand' in opts ? opts.usageHasCommand : false
     this._usageCommandPlaceholder = 'usageCommandPlaceholder' in opts ? opts.usageCommandPlaceholder : '<command>'
     this._usageHasArgs = 'usageHasArgs' in opts ? opts.usageHasArgs : false
@@ -26,19 +29,16 @@ class Buffer {
     this._usageHasOptions = 'usageHasOptions' in opts ? opts.usageHasOptions : false
     this._usageOptionsPlaceholder = 'usageOptionsPlaceholder' in opts ? opts.usageOptionsPlaceholder : '[options]'
     this._usagePositionals = Array.isArray(opts.usagePositionals) ? opts.usagePositionals : []
-
-    this._groups = opts.groups || {} // Commands, Options, Examples
+    // types
+    this._groups = opts.groups || {} // maps heading to array of types, see Type.toObject and Context.addDeferredHelp
     this._groupOrder = opts.groupOrder || []
-    // each group keyed by heading
-    // with a value of array<types>
-    // each type should have:
-    // - flags with or without placeholder
-    // - description
-    // - hints
-    this._epilogue = opts.epilogue || '' // "See alainasaservice.com for more details"
-
+    // examples
+    this._examples = opts.examples || {} // see Api.example
+    this._exampleOrder = opts.exampleOrder || []
+    // epilogue
+    this._epilogue = opts.epilogue || ''
+    // cli/validation/error messages
     this._messages = opts.messages || []
-    this._maxWidth = opts.maxWidth || Math.min(process.stdout.columns || 100, 100)
     // dependencies
     this._utils = opts.utils
   }
@@ -111,6 +111,14 @@ class Buffer {
     return this._groupOrder
   }
 
+  get examples () {
+    return this._examples
+  }
+
+  get exampleOrder () {
+    return this._exampleOrder
+  }
+
   get messages () {
     return this._messages
   }
@@ -135,58 +143,92 @@ class Buffer {
       includePreface: true,
       includeUsage: true,
       includeGroups: true,
+      includeExamples: true,
       includeEpilogue: true
     }, opts)
     let str = this.appendSection('', !!opts.includePreface && this.icon, this.sectionSep)
     if (opts.includePreface) str = this.appendSection(str, this.slogan, this.lineSep)
     if (opts.includeUsage) str = this.appendSection(str, this.usage, this.sectionSep)
     if (opts.includeGroups) str = this.appendSection(str, this.groupsContent(), this.sectionSep)
+    if (opts.includeExamples) str = this.appendSection(str, this.examplesContent(), this.sectionSep)
     if (opts.includeEpilogue) str = this.appendSection(str, this.epilogue, this.sectionSep)
     return str
   }
 
   groupsContent () {
+    return this.buildGroupedContent(this.groups, this.groupOrder, this.appendGroup)
+  }
+
+  examplesContent () {
+    return this.buildGroupedContent(this.examples, this.exampleOrder, this.appendExampleGroup)
+  }
+
+  buildGroupedContent (groups, order, appendMethod) {
     let str = ''
-    let groupsLeft = JSON.parse(JSON.stringify(this.groups))
-    let order = this.groupOrder
+    let groupsLeft = JSON.parse(JSON.stringify(groups))
     if (!order || !order.length) {
       // default order: Commands, Arguments, <custom>, Options
       order = Array.from(new Set(['Commands:', 'Arguments:'].concat(Object.keys(groupsLeft)).concat('Options:')))
     }
     let types
-    order.forEach(heading => {
-      types = (groupsLeft[heading] || []).filter(type => !type.isHidden) // array of types
+    const handleGroup = heading => {
+      types = (groupsLeft[heading] || []).filter(type => !type.isHidden)
       if (!types.length) {
         delete groupsLeft[heading]
-        return undefined
+        return
       }
-
-      // first determine width needed for all flags
-      let flagsWidth = 0
-      types.forEach(type => {
-        if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
-      })
-      let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
-
-      if (heading) str = this.appendSection(str, heading, this.sectionSep)
-
-      // if any types in this group require multi line, then just do all of them multi line
-      let multiline = types.some(type => this.determineLines(type, flagsWidth, maxWidth) > 1)
-
-      // then add each line:
-      // indent + flags + padding + indent + ((desc + padding + hints) || (descMultiline + hintsMultiline))
-      let first = true
-      types.forEach(type => {
-        // str = this.appendTypeSimple(str, type, flagsWidth)
-        if (multiline && str && !first) str += this.lineSep
-        first = false
-        str = multiline ? this.appendTypeMultiLine(str, type, flagsWidth, maxWidth) : this.appendTypeSingleLine(str, type, flagsWidth, maxWidth)
-      })
-
+      str = appendMethod.call(this, str, heading, types)
       delete groupsLeft[heading]
+    }
+    // add groups mentioned in the order first
+    order.forEach(handleGroup)
+    // then add any groups not mentioned in the order
+    Object.keys(groupsLeft).forEach(handleGroup)
+    return str
+  }
+
+  appendGroup (str, heading, types) {
+    // first determine width needed for all flags
+    let flagsWidth = 0
+    types.forEach(type => {
+      if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
     })
-    Object.keys(groupsLeft).forEach(heading => {
-      // TODO ditto
+    let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
+
+    if (heading) str = this.appendSection(str, heading, this.sectionSep)
+
+    // if any types in this group require multi line, then just do all of them multi line
+    let multiline = types.some(type => this.determineLines(type, flagsWidth, maxWidth) > 1)
+
+    // then add each line:
+    // indent + flags + padding + indent + ((desc + padding + hints) || (descMultiline + hintsMultiline))
+    let first = true
+    types.forEach(type => {
+      if (multiline && str && !first) str += this.lineSep
+      first = false
+      str = multiline ? this.appendTypeMultiLine(str, type, flagsWidth, maxWidth) : this.appendTypeSingleLine(str, type, flagsWidth, maxWidth)
+    })
+    return str
+  }
+
+  appendExampleGroup (str, heading, examples) {
+    if (heading) str = this.appendSection(str, heading, this.sectionSep)
+
+    let flags
+    let desc
+    let first = true
+    examples.forEach(example => {
+      desc = example.description || example.desc
+      if (str && !first && desc) str += this.lineSep
+      first = false
+
+      flags = !example.flags ? '' : (this._examplePrefix || '') + example.flags
+      if (flags && this._usageName) flags = flags.replace('$0', this._usageName)
+
+      str = this.appendTypeMultiLine(str, {
+        helpDesc: desc,
+        helpHints: flags
+      }, 0, this.maxWidth)
     })
     return str
   }
