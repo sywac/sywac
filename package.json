@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "So you want a CLI...",
   "main": "index.js",
+  "files": [
+    "*.js",
+    "types/*.js",
+    "lib/*.js"
+  ],
   "scripts": {
     "lint": "standard",
     "test": "standard && tap --cov test/*.js"
@@ -22,7 +27,7 @@
     "argv"
   ],
   "author": "nexdrew",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/nexdrew/sywac/issues"
   },
