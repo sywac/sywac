@@ -103,10 +103,6 @@ class Api {
     return this._parentName || 'node'
   }
 
-  get checkHandler () {
-    return typeof this._checkHandler === 'function' ? this._checkHandler : () => {}
-  }
-
   // type factories
   registerFactory (name, factory) {
     if (name && typeof factory === 'function') this._factories[name] = factory
@@ -509,12 +505,9 @@ class Api {
   parse (args) {
     // init context and kick off recursive type parsing/execution
     let context = this.initContext(false).slurpArgs(args)
+    if (this._showHelpByDefault && !context.details.args.length) context.deferHelp() // preemptively request help
     return this.parseFromContext(context).then(whenDone => {
-      if (
-        (context.helpRequested && !context.output) ||
-        (this._showHelpByDefault && !context.details.args.length && !context.output && !context.commandHandlerRun)
-      ) {
-        if (!context.helpRequested) context.deferHelp() // make sure help is seen as requested
+      if (context.helpRequested && !context.output) {
         context.addDeferredHelp(this.initHelpBuffer())
       } else if (context.versionRequested && !context.output) {
         context.addDeferredVersion()
@@ -573,9 +566,10 @@ class Api {
 
       // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
 
-      // run api-level async argv check/hook between argv population and command execution
-      // it should use context.cliMessage to report errors
-      return this.checkHandler(context.argv, context)
+      // run custom api-level async argv check/hook between argv population and command execution
+      // it should use context.cliMessage to report errors (or can otherwise manipulate context)
+      if (this.shouldRunCustomCheck(context, hasCommands, hasDefaultCommand)) return this._checkHandler(context.argv, context)
+      return Promise.resolve(true)
     }).then(whenDone => {
       // run async post-parsing
       let postParse = this.types.map(type => type.postParse(context)) // this potentially runs commands
@@ -597,6 +591,17 @@ class Api {
   initHelpBuffer () {
     let helpOpts = Object.assign({ utils: this.utils, usageName: this.name }, this.helpOpts)
     return this.get('helpBuffer', helpOpts)
+  }
+
+  // clear as mud? this predicts the future, essentially the inverse of conditions found in parse after
+  // parseFromContext and also the conditions that would make the showHelpByDefault command run
+  // basically, we don't want to run the custom check handler if help text or version will be output
+  shouldRunCustomCheck (context, hasCommands, hasDefaultCommand) {
+    return typeof this._checkHandler === 'function' &&
+      !context.helpRequested &&
+      !context.versionRequested &&
+      !(context.messages && context.messages.length) &&
+      !(this._showHelpByDefault && hasCommands && !hasDefaultCommand && !context.explicitCommandMatch(this.name))
   }
 
   // optional convenience methods

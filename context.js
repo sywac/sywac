@@ -128,17 +128,17 @@ class Context {
     this.messages.push(format.apply(null, arguments))
   }
 
+  explicitCommandMatch (level) {
+    if (!this.argv._ || !this.argv._.length) return false
+    const candidate = this.argv._[0]
+    return (this.types[level] || []).some(type => type.datatype === 'command' && type.aliases.some(alias => alias === candidate))
+  }
+
   matchCommand (level, aliases, isDefault) {
     if (!this.argv._ || this.versionRequested) return false // TODO what to do without an unknownType?
     // first determine if argv._ starts with ANY known command alias
-    // if there's a match and it's NOT one of the given aliases, return false
-    // if there's a match and it IS one of the given aliases, return true
-    // if there's NO match and the given isDefault is true, return true
-    // otherwise return false
-    let candidate = this.argv._[0]
-    let matchFound = (this.types[level] || []).some(type => {
-      return type.datatype === 'command' && type.aliases.some(alias => alias === candidate)
-    })
+    const matchFound = this.explicitCommandMatch(level)
+    const candidate = this.argv._[0]
     return {
       explicit: matchFound && aliases.some(alias => alias === candidate),
       implicit: !matchFound && isDefault && !this.helpRequested
