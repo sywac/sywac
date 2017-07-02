@@ -103,6 +103,10 @@ class Api {
     return this._parentName || 'node'
   }
 
+  get checkHandler () {
+    return typeof this._checkHandler === 'function' ? this._checkHandler : () => {}
+  }
+
   // type factories
   registerFactory (name, factory) {
     if (name && typeof factory === 'function') this._factories[name] = factory
@@ -481,6 +485,12 @@ class Api {
 
   // TODO more types
 
+  // lifecycle hook
+  check (handler) {
+    this._checkHandler = handler
+    return this
+  }
+
   // parse and exit if there's output (e.g. help text) or a non-zero code; otherwise resolves to argv
   // useful for standard CLIs
   parseAndExit (args) {
@@ -563,6 +573,10 @@ class Api {
 
       // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
 
+      // run api-level async argv check/hook between argv population and command execution
+      // it should use context.cliMessage to report errors
+      return this.checkHandler(context.argv, context)
+    }).then(whenDone => {
       // run async post-parsing
       let postParse = this.types.map(type => type.postParse(context)) // this potentially runs commands
       if (this.unknownType) postParse = postParse.concat(this.unknownType.postParse(context))
