@@ -27,6 +27,7 @@ class Type {
     if (override || !this._aliases.length) this._aliases = opts.aliases ? (this._aliases || []).concat(opts.aliases) : this._aliases
     if (override || typeof this._defaultVal === 'undefined') this._defaultVal = 'defaultValue' in opts ? opts.defaultValue : this._defaultVal
     if (override || typeof this._required === 'undefined') this._required = 'required' in opts ? opts.required : this._required
+    if (override || typeof this._coerceHandler !== 'function') this._coerceHandler = opts.coerce || this._coerceHandler
     // configurable for help text
     if (override || !this._flags) this._flags = opts.flags || this._flags
     if (override || !this._desc) this._desc = opts.description || opts.desc || this._desc
@@ -77,6 +78,15 @@ class Type {
 
   get isRequired () {
     return !!this._required
+  }
+
+  coerce (syncFunction) {
+    this._coerceHandler = syncFunction
+    return this
+  }
+
+  get coerceHandler () {
+    return typeof this._coerceHandler === 'function' ? this._coerceHandler : v => v
   }
 
   flags (f) {
@@ -329,8 +339,7 @@ class Type {
     }
   }
 
-  toResult () {
-    // console.log('toResult', this.constructor.name, this.helpFlags)
+  toResult (shouldCoerce) {
     return {
       // populated via config
       parent: this.parent,
@@ -342,7 +351,7 @@ class Type {
       // helpHints: this.helpHints,
       // helpGroup: this.helpGroup,
       // populated via parse
-      value: this.value,
+      value: shouldCoerce ? this.coerceHandler(this.value) : this.value,
       source: this.source,
       position: this.position,
       raw: this.raw

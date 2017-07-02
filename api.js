@@ -560,15 +560,18 @@ class Api {
       return (this.unknownType && this.unknownType.parse(context)) || Promise.resolve(true)
     }).then(whenDone => {
       // once all parsing is complete, populate argv in context (sync)
-      let types = this.types.map(type => type.toResult())
-      if (this.unknownType) types = types.concat(this.unknownType.toResult())
-      context.populateArgv(types)
+      // first add unknownType to context.argv (because it's needed to determine shouldCoerceAndCheck)
+      if (this.unknownType) context.populateArgv([this.unknownType.toResult(true)])
+      // next determine shouldCoerceAndCheck
+      const shouldCoerceAndCheck = this.shouldCoerceAndCheck(context, hasCommands, hasDefaultCommand)
+      // then populate argv with other types, letting them know if it makes sense to apply coercion
+      context.populateArgv(this.types.map(type => type.toResult(shouldCoerceAndCheck)))
 
       // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
 
       // run custom api-level async argv check/hook between argv population and command execution
       // it should use context.cliMessage to report errors (or can otherwise manipulate context)
-      if (this.shouldRunCustomCheck(context, hasCommands, hasDefaultCommand)) return this._checkHandler(context.argv, context)
+      if (typeof this._checkHandler === 'function' && shouldCoerceAndCheck) return this._checkHandler(context.argv, context)
       return Promise.resolve(true)
     }).then(whenDone => {
       // run async post-parsing
@@ -596,9 +599,8 @@ class Api {
   // clear as mud? this predicts the future, essentially the inverse of conditions found in parse after
   // parseFromContext and also the conditions that would make the showHelpByDefault command run
   // basically, we don't want to run the custom check handler if help text or version will be output
-  shouldRunCustomCheck (context, hasCommands, hasDefaultCommand) {
-    return typeof this._checkHandler === 'function' &&
-      !context.helpRequested &&
+  shouldCoerceAndCheck (context, hasCommands, hasDefaultCommand) {
+    return !context.helpRequested &&
       !context.versionRequested &&
       !(context.messages && context.messages.length) &&
       !(this._showHelpByDefault && hasCommands && !hasDefaultCommand && !context.explicitCommandMatch(this.name))

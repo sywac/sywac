@@ -80,8 +80,8 @@ class TypePositional extends TypeWrapper {
     this.elementType.reset()
   }
 
-  toResult () {
-    return this.elementType.toResult()
+  toResult (shouldCoerce) {
+    return this.elementType.toResult(shouldCoerce)
   }
 }
 
