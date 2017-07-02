@@ -34,7 +34,7 @@ class TypeCommand extends Type {
   }
 
   get api () {
-    if (!this._api) this._api = require('../api').get()
+    if (!this._api) this._api = Api.get()
     return this._api
   }
 
