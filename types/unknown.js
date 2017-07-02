@@ -59,16 +59,18 @@ class TypeUnknown extends Type {
     // TODO when setting context.argv below, add to context.details.types ??
     let unparsed = []
     let prev = [{}]
+    let prevIndex
     unknownSlurped.forEach(arg => {
       arg.parsed.forEach(kv => {
         if (kv.key) context.argv[kv.key] = kv.value // TODO attempt to coerce to correct type?
         else unparsed.push({ raw: arg.raw, index: arg.index })
       })
-      if (!arg.parsed[arg.parsed.length - 1].key && prev[prev.length - 1].key && typeof prev[prev.length - 1].value !== 'string' && prev[prev.length - 1].last) {
+      if (!arg.parsed[arg.parsed.length - 1].key && prev[prev.length - 1].key && typeof prev[prev.length - 1].value !== 'string' && prev[prev.length - 1].last && prevIndex === (arg.index - 1)) {
         context.argv[prev[prev.length - 1].key] = arg.parsed[arg.parsed.length - 1].value // TODO attempt to coerce to correct type?
         unparsed = unparsed.slice(0, -1)
       }
       prev = arg.parsed
+      prevIndex = arg.index
     })
 
     if (unparsed.length) {
