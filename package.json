@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nexdrew/sywac.git"
+    "url": "git+https://github.com/sywac/sywac.git"
   },
   "keywords": [
     "cli",
@@ -29,9 +29,9 @@
   "author": "nexdrew",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nexdrew/sywac/issues"
+    "url": "https://github.com/sywac/sywac/issues"
   },
-  "homepage": "https://github.com/nexdrew/sywac#readme",
+  "homepage": "https://github.com/sywac/sywac#readme",
   "devDependencies": {
     "standard": "^10.0.2",
     "tap": "^10.3.3"
