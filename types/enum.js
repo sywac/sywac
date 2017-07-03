@@ -1,6 +1,5 @@
 'use strict'
 
-const Type = require('./type')
 const TypeString = require('./string')
 
 class TypeEnum extends TypeString {
@@ -9,7 +8,7 @@ class TypeEnum extends TypeString {
   }
 
   constructor (opts) {
-    super(Object.assign({ caseInsensitive: true }, opts))
+    super(Object.assign({ strict: true, caseInsensitive: true }, opts))
   }
 
   configure (opts, override) {
@@ -29,7 +28,7 @@ class TypeEnum extends TypeString {
   }
 
   get choices () {
-    return this._choices
+    return this._choices || []
   }
 
   buildHelpHints (hints) {
@@ -39,21 +38,21 @@ class TypeEnum extends TypeString {
     if (this.choices.length) hints.push(this.choices.join(', '))
   }
 
-  validateParsed (context) {
-    return super.validateParsed(context).then(whenDone => {
-      let value = this.value && (this._caseInsensitive ? this.value.toLocaleUpperCase() : this.value)
-      if (
-        this.source !== Type.SOURCE_DEFAULT &&
-        this.choices.length &&
-        !this.choices.some(c => {
-          c = this._caseInsensitive ? String(c).toLocaleUpperCase() : String(c)
-          return c === value
-        })
-      ) {
-        context.cliMessage('Value "%s" is invalid for argument %s. Choices are: %s', this.value, this.aliases.join(' or '), this.choices.join(', '))
-      }
-      return this.resolve()
+  get isValueValid () {
+    if (!this.choices.length) return true
+    let value = this.value && (this._caseInsensitive ? this.value.toLocaleUpperCase() : this.value)
+    return this.choices.some(c => {
+      c = this._caseInsensitive ? String(c).toLocaleUpperCase() : String(c)
+      return c === value
     })
+  }
+
+  buildInvalidMessage (msgAndArgs) {
+    super.buildInvalidMessage(msgAndArgs)
+    if (this.choices.length) {
+      msgAndArgs.msg += ' Choices are: %s'
+      msgAndArgs.args.push(this.choices.join(', '))
+    }
   }
 }
 

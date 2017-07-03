@@ -27,6 +27,7 @@ class Type {
     if (override || !this._aliases.length) this._aliases = opts.aliases ? (this._aliases || []).concat(opts.aliases) : this._aliases
     if (override || typeof this._defaultVal === 'undefined') this._defaultVal = 'defaultValue' in opts ? opts.defaultValue : this._defaultVal
     if (override || typeof this._required === 'undefined') this._required = 'required' in opts ? opts.required : this._required
+    if (override || typeof this._strict === 'undefined') this._strict = 'strict' in opts ? opts.strict : this._strict
     if (override || typeof this._coerceHandler !== 'function') this._coerceHandler = opts.coerce || this._coerceHandler
     // configurable for help text
     if (override || !this._flags) this._flags = opts.flags || this._flags
@@ -78,6 +79,15 @@ class Type {
 
   get isRequired () {
     return !!this._required
+  }
+
+  strict (s) {
+    this._strict = s
+    return this
+  }
+
+  get isStrict () {
+    return !!this._strict
   }
 
   coerce (syncFunction) {
@@ -250,9 +260,26 @@ class Type {
 
   // async validation called from parse
   validateParsed (context) {
-    // TODO do validation here, add any errors to context
-    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) context.cliMessage('Missing required argument:', this.aliases.join(' or '))
+    let msgAndArgs
+    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) {
+      msgAndArgs = { msg: '', args: [] }
+      this.buildRequiredMessage(msgAndArgs)
+    } else if (this.isStrict && this.source !== Type.SOURCE_DEFAULT && !this.isValueValid) {
+      msgAndArgs = { msg: '', args: [] }
+      this.buildInvalidMessage(msgAndArgs)
+    }
+    if (msgAndArgs && msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
     return this.resolve()
+  }
+
+  buildRequiredMessage (msgAndArgs) {
+    msgAndArgs.msg = 'Missing required argument: %s'
+    msgAndArgs.args = [this.aliases.join(' or ')]
+  }
+
+  buildInvalidMessage (msgAndArgs) {
+    msgAndArgs.msg = 'Value "%s" is invalid for argument %s.'
+    msgAndArgs.args = [this.value, this.aliases.join(' or ')]
   }
 
   // async hook to execute after all parsing
@@ -283,6 +310,10 @@ class Type {
   // == after parsing ==
   get value () {
     return this._value
+  }
+
+  get isValueValid () {
+    return true
   }
 
   get source () {

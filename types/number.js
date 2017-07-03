@@ -11,10 +11,6 @@ class TypeNumber extends Type {
     return new TypeNumber(opts)
   }
 
-  // constructor (opts) {
-  //   super(opts)
-  // }
-
   get datatype () {
     return 'number'
   }
@@ -26,6 +22,16 @@ class TypeNumber extends Type {
 
   setValue (value) {
     this._value = typeof value === 'boolean' ? NaN : value
+  }
+
+  // this is only checked if isStrict
+  get isValueValid () {
+    return TypeNumber.isNumber(this._value) && !isNaN(this._value)
+  }
+
+  buildInvalidMessage (msgAndArgs) {
+    super.buildInvalidMessage(msgAndArgs)
+    msgAndArgs.msg += ' Please specify a number.'
   }
 }
 
