@@ -35,8 +35,8 @@ class Context {
   }
 
   slurpArgs (args) {
-    if (!args) args = process.argv.slice(2)
     if (typeof args === 'string') args = this.utils.stringToArgs(args)
+    if (!args) args = process.argv.slice(2)
     if (!Array.isArray(args)) args = [].concat(args)
     // TODO read from stdin with no args? based on config?
     let parseable = []
