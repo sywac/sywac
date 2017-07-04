@@ -9,8 +9,8 @@
     "lib/*.js"
   ],
   "scripts": {
-    "lint": "standard",
-    "test": "standard && tap --cov test/*.js"
+    "pretest": "standard",
+    "test": "tap --cov test/lib/*.js"
   },
   "engines": {
     "node": ">=4"
@@ -31,9 +31,9 @@
   "bugs": {
     "url": "https://github.com/sywac/sywac/issues"
   },
-  "homepage": "https://github.com/sywac/sywac#readme",
+  "homepage": "http://sywac.io",
   "devDependencies": {
     "standard": "^10.0.2",
-    "tap": "^10.3.3"
+    "tap": "^10.7.0"
   }
 }
