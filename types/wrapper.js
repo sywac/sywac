@@ -26,6 +26,10 @@ class TypeWrapper extends Type {
   get datatype () {
     return this.elementType.datatype
   }
+
+  get shouldValidateDefaultValue () {
+    return this.elementType.shouldValidateDefaultValue
+  }
 }
 
 module.exports = TypeWrapper

@@ -64,36 +64,38 @@ class TypePath extends TypeString {
     return this._fsLib
   }
 
-  validateParsed (context) {
-    return super.validateParsed(context).then(whenDone => {
-      const promise = Promise.resolve(whenDone)
+  // this is used to kick off validateValue in parent or wrapper type
+  get isStrict () {
+    return typeof this._mustExist === 'boolean'
+  }
 
-      // specifying fileAllowed or dirAllowed WITHOUT mustExist is just commentary/suggestive
-      if (this._value && typeof this._mustExist === 'boolean') {
-        return new Promise(resolve => {
-          this.fsLib.stat(this._value, (err, stats) => {
-            if (err) this.handleStatErr(err, context)
-            else this.handleStats(stats, context)
-            resolve(promise)
-          })
-        })
-      }
+  get shouldValidateDefaultValue () {
+    return true
+  }
 
-      return promise
+  // always resolve to true since we add our own validation messages
+  validateValue (value, context) {
+    if (!value) return true
+    return new Promise(resolve => {
+      this.fsLib.stat(value, (err, stats) => {
+        if (err) this.handleStatErr(err, context, value)
+        else this.handleStats(stats, context, value)
+        resolve(true)
+      })
     })
   }
 
-  handleStatErr (err, context) {
+  handleStatErr (err, context, value) {
     const msgMap = {
       'EACCES_true': 'Cannot access %s: %s',
       'EACCES_false': 'The %s already exists and is inaccessible: %s',
       'ENOENT_true': 'The %s does not exist: %s'
     }
     let msg = msgMap[err.code + '_' + this._mustExist]
-    if (msg) context.cliMessage(msg, this.fulltype, this._value)
+    if (msg) context.cliMessage(msg, this.fulltype, value)
   }
 
-  handleStats (stats, context) {
+  handleStats (stats, context, value) {
     let msg
     const actualType = stats.isFile() ? 'file' : 'directory'
     const wantedType = this.fulltype
@@ -103,7 +105,7 @@ class TypePath extends TypeString {
     } else if (wantedType !== 'path' && actualType !== wantedType) {
       msg = 'The path is a %s: %s'
     }
-    if (msg) context.cliMessage(msg, actualType, this._value)
+    if (msg) context.cliMessage(msg, actualType, value)
   }
 
   get value () {

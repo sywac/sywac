@@ -38,9 +38,9 @@ class TypeEnum extends TypeString {
     if (this.choices.length) hints.push(this.choices.join(', '))
   }
 
-  get isValueValid () {
+  validateValue (value) {
     if (!this.choices.length) return true
-    let value = this.value && (this._caseInsensitive ? this.value.toLocaleUpperCase() : this.value)
+    value = value && (this._caseInsensitive ? String(value).toLocaleUpperCase() : value)
     return this.choices.some(c => {
       c = this._caseInsensitive ? String(c).toLocaleUpperCase() : String(c)
       return c === value

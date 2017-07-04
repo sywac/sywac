@@ -53,6 +53,10 @@ class Type {
     return Array.isArray(this._value) ? 'array' : typeof this._value
   }
 
+  get shouldValidateDefaultValue () {
+    return false
+  }
+
   // == before parsing ==
   alias (a) {
     if (a) this._aliases = this._aliases.concat(a)
@@ -243,7 +247,7 @@ class Type {
           anyKeyMatchedAlias = true
           this.observeAlias(matchedAlias)
           previousUsedValue = kv.value
-          this.setValue(previousUsedValue) // TODO pass isExplicit arg ? or first check if isValid(value) ?
+          this.setValue(previousUsedValue)
           this.applySource(Type.SOURCE_FLAG, arg.index, arg.raw)
           kv.claimed = true
         }
@@ -260,16 +264,32 @@ class Type {
 
   // async validation called from parse
   validateParsed (context) {
-    let msgAndArgs
-    if (this.isRequired && this.source === Type.SOURCE_DEFAULT) {
-      msgAndArgs = { msg: '', args: [] }
-      this.buildRequiredMessage(msgAndArgs)
-    } else if (this.isStrict && this.source !== Type.SOURCE_DEFAULT && !this.isValueValid) {
-      msgAndArgs = { msg: '', args: [] }
-      this.buildInvalidMessage(msgAndArgs)
-    }
-    if (msgAndArgs && msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
-    return this.resolve()
+    let promises = []
+
+    promises.push(new Promise(resolve => {
+      if (this.isRequired && this.source === Type.SOURCE_DEFAULT) {
+        const msgAndArgs = { msg: '', args: [] }
+        this.buildRequiredMessage(msgAndArgs)
+        if (msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
+      }
+      resolve()
+    }))
+
+    promises.push(new Promise(resolve => {
+      if (this.isStrict && (this.source !== Type.SOURCE_DEFAULT || this.shouldValidateDefaultValue)) {
+        return Promise.resolve(this.validateValue(this.value, context)).then(isValid => {
+          if (!isValid) {
+            const msgAndArgs = { msg: '', args: [] }
+            this.buildInvalidMessage(msgAndArgs)
+            if (msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
+          }
+          resolve()
+        })
+      }
+      resolve()
+    }))
+
+    return Promise.all(promises).then(this.resolve)
   }
 
   buildRequiredMessage (msgAndArgs) {
@@ -312,7 +332,8 @@ class Type {
     return this._value
   }
 
-  get isValueValid () {
+  // subtype impls can be async (return a promise)
+  validateValue (value, context) {
     return true
   }
 

@@ -40,29 +40,15 @@ class TypeArray extends TypeWrapper {
     return this
   }
 
-  /*
-  validateConfig (utils) {
-    let hasSubtype = !!this._elementType
-    let hasFlagsOrAliases = !!this._aliases.length || (typeof this._flags === 'string' && !!this._flags.length)
-
-    if (!hasSubtype && !hasFlagsOrAliases) {
-      // gotta give me something
-      throw new Error(`${this.constructor.name} requires an element type.`)
-    } else if (!hasSubtype && hasFlagsOrAliases) {
-      // implicitly use TypeString
-      this._elementType = require('./string').get().alias(this.aliases).flags(this.helpFlags)
-    } else if (hasSubtype && !hasFlagsOrAliases) {
-      // use flags/aliases from subtype, if given
-      this.alias(this._elementType.aliases).flags(this._elementType.helpFlags)
-    }
-
-    super.validateConfig(utils)
-  }
-  */
-
   get datatype () {
     let subtype = this.elementType.datatype
     return 'array' + (subtype ? `:${subtype}` : '')
+  }
+
+  buildHelpHints (hints) {
+    this.elementType.buildHelpHints(hints)
+    const datatypeIndex = hints.findIndex(h => h === this.elementType.datatype)
+    if (datatypeIndex !== -1) hints[datatypeIndex] = this.datatype
   }
 
   isApplicable (currentValue, previousValue, slurpedArg) {
@@ -102,6 +88,24 @@ class TypeArray extends TypeWrapper {
     }
     // console.log('array.js > this._value:', this._value)
     this._value.push(elementValue)
+  }
+
+  get isStrict () {
+    return super.isStrict || this.elementType.isStrict
+  }
+
+  validateValue (value, context) {
+    return Promise.all((value || []).map(v => this.elementType.validateValue(v, context))).then(validArray => {
+      return (validArray || []).filter(isValid => !isValid).length === 0
+    })
+  }
+
+  buildInvalidMessage (msgAndArgs) {
+    super.buildInvalidMessage(msgAndArgs)
+    const sub = {}
+    this.elementType.buildInvalidMessage(sub)
+    if (sub.msg) msgAndArgs.msg = sub.msg
+    if (sub.args.length > msgAndArgs.args.length) msgAndArgs.args = msgAndArgs.args.concat(sub.args.slice(msgAndArgs.args.length))
   }
 
   reset () {

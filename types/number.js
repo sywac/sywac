@@ -25,8 +25,8 @@ class TypeNumber extends Type {
   }
 
   // this is only checked if isStrict
-  get isValueValid () {
-    return TypeNumber.isNumber(this._value) && !isNaN(this._value)
+  validateValue (value) {
+    return TypeNumber.isNumber(value) && !isNaN(value)
   }
 
   buildInvalidMessage (msgAndArgs) {
