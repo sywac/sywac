@@ -23,6 +23,7 @@ class TypePositional extends TypeWrapper {
   }
 
   get isVariadic () {
+    // TODO perhaps remove this._variadic and return this.datatype.startsWith('array') instead
     return this._variadic
   }
 
