@@ -17,7 +17,7 @@ class TypeUnknown extends Type {
   }
 
   get datatype () {
-    return 'array'
+    return 'array:string'
   }
 
   addPositional (positional) {
