@@ -108,8 +108,8 @@ class TypePath extends TypeString {
     if (msg) context.cliMessage(msg, actualType, value)
   }
 
-  get value () {
-    let value = super.value
+  getValue (context) {
+    let value = super.getValue(context)
     if (value && this._normalize) value = this.pathLib.normalize(value)
     if (value && this._asObject) value = this.pathLib.parse(value)
     return value

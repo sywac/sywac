@@ -154,7 +154,7 @@ tap.test('api parse > multiple sequential passes', t => {
   })
 })
 
-tap.test('api parse > multiple concurrent passes', {skip: true}, t => {
+tap.test('api parse > multiple concurrent passes', t => {
   const api = Api.get()
     .boolean('--bool | -b')
     .string('--str  | -s <value>')

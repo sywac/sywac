@@ -1,5 +1,6 @@
 'use strict'
 
+const SOURCE_DEFAULT = require('./type').SOURCE_DEFAULT
 const TypeWrapper = require('./wrapper')
 
 class TypeArray extends TypeWrapper {
@@ -8,7 +9,7 @@ class TypeArray extends TypeWrapper {
   }
 
   constructor (opts) {
-    super(Object.assign({ defaultValue: [], delim: ',', cumulative: true }, opts || {}))
+    super(Object.assign({ delim: ',', cumulative: true }, opts || {}))
   }
 
   configure (opts, override) {
@@ -40,6 +41,11 @@ class TypeArray extends TypeWrapper {
     return this
   }
 
+  get defaultVal () {
+    const dv = super.defaultVal
+    return dv ? [].concat(dv) : [] // DO NOT LET getValue AND defaultVal REFERENCE THE SAME ARRAY OBJECT!
+  }
+
   get datatype () {
     let subtype = this.elementType.datatype
     return 'array' + (subtype ? `:${subtype}` : '')
@@ -51,43 +57,49 @@ class TypeArray extends TypeWrapper {
     if (datatypeIndex !== -1) hints[datatypeIndex] = this.datatype
   }
 
-  isApplicable (currentValue, previousValue, slurpedArg) {
+  isApplicable (context, currentValue, previousValue, slurpedArg) {
     // remove last element if previous value was not explicit
-    if (this._value && this._value.length && typeof previousValue !== 'string') {
-      this._value = this._value.slice(0, -1)
-    }
-    this.elementType.isApplicable(currentValue, previousValue, slurpedArg)
+    let v = context.lookupValue(this.id)
+    if (v && v.length && typeof previousValue !== 'string') v.pop()
+    this.elementType.isApplicable(context, currentValue, previousValue, slurpedArg)
     return true // TODO this is greedy (`--key=one two` includes `one` and `two`), make this configurable
   }
 
-  observeAlias (alias) {
-    if (!this._cumulative) this._value = []
-    this.elementType.observeAlias(alias)
+  observeAlias (context, alias) {
+    if (!this._cumulative) context.assignValue(this.id, [])
+    this.elementType.observeAlias(context, alias)
   }
 
-  setValue (value) {
-    // console.log('array.js > setValue:', value, 'for', this.helpFlags)
+  setValue (context, value) {
+    // if current source is 'default', then we're now setting a non-default value
+    // so append to a fresh array instead of the default one
+    // note that this assumes setValue is called before applySource in api.applyTypes
+    if (context.lookupSourceValue(this.id) === SOURCE_DEFAULT) context.assignValue(this.id, [])
+
     if (Array.isArray(value)) {
-      this._value = (this._value || []).concat(value)
+      let v = context.lookupValue(this.id)
+      context.assignValue(this.id, (v || []).concat(value))
       return
     }
     if (value && this.delim && typeof value === 'string') {
-      value.split(this.delim).forEach(v => this.addValue(v))
+      value.split(this.delim).forEach(v => this.addValue(context, v))
       return
     }
-    this.addValue(value)
+    this.addValue(context, value)
   }
 
-  addValue (value) {
-    this.elementType.setValue(value)
-    if (!this._value) this._value = []
-    // if (!this._value || !Array.isArray(this._value)) this._value = []
-    let elementValue = this.elementType.value
-    if (Array.isArray(elementValue) && this._value.length && this._value[this._value.length - 1] === elementValue) {
+  addValue (context, value) {
+    this.elementType.setValue(context, value)
+    let v = context.lookupValue(this.id)
+    if (!v) {
+      v = []
+      context.assignValue(this.id, v)
+    }
+    let elementValue = this.elementType.getValue(context)
+    if (Array.isArray(elementValue) && v.length && v[v.length - 1] === elementValue) {
       return // we already have elementValue, it's just been modified
     }
-    // console.log('array.js > this._value:', this._value)
-    this._value.push(elementValue)
+    v.push(elementValue)
   }
 
   get isStrict () {
@@ -100,17 +112,12 @@ class TypeArray extends TypeWrapper {
     })
   }
 
-  buildInvalidMessage (msgAndArgs) {
-    super.buildInvalidMessage(msgAndArgs)
+  buildInvalidMessage (context, msgAndArgs) {
+    super.buildInvalidMessage(context, msgAndArgs)
     const sub = {}
-    this.elementType.buildInvalidMessage(sub)
+    this.elementType.buildInvalidMessage(context, sub)
     if (sub.msg) msgAndArgs.msg = sub.msg
     if (sub.args.length > msgAndArgs.args.length) msgAndArgs.args = msgAndArgs.args.concat(sub.args.slice(msgAndArgs.args.length))
-  }
-
-  reset () {
-    super.reset()
-    this._value = this._value.slice() // DO NOT LET _value AND _defaultVal REFERENCE THE SAME ARRAY OBJECT!
   }
 }
 

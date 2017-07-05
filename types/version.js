@@ -38,12 +38,12 @@ class TypeVersion extends TypeImplicitCommand {
   }
 
   validateParsed (context) {
-    if (this.value) this.requestVersion(context) // must call this before postParse in case of commands
+    if (this.getValue(context)) this.requestVersion(context) // must call this before postParse in case of commands
     return this.resolve()
   }
 
-  implicitCommandFound (source, position, raw, context) {
-    super.implicitCommandFound(source, position, raw, context)
+  implicitCommandFound (context, source, position, raw) {
+    super.implicitCommandFound(context, source, position, raw)
     this.requestVersion(context) // must call this before postParse in case of commands
   }
 

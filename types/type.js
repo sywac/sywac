@@ -16,8 +16,6 @@ class Type {
   constructor (opts) {
     this._aliases = []
     this.configure(opts, true)
-    // prepare for parsing
-    this.reset()
   }
 
   configure (opts, override) {
@@ -38,6 +36,12 @@ class Type {
     return this
   }
 
+  // returns a string uniquely identifying this type across all levels
+  // used for mapping values and sources in context
+  get id () {
+    return `${this.parent}|${this.datatype}|${this.aliases.join(',')}`
+  }
+
   withParent (apiName) {
     this._parent = apiName
     return this
@@ -48,9 +52,8 @@ class Type {
   }
 
   get datatype () {
-    // subtypes should override this so as not to rely on this._value
-    // because it's used for help text hints, when value is not set
-    return Array.isArray(this._value) ? 'array' : typeof this._value
+    // subtypes should override this!
+    return 'value'
   }
 
   get shouldValidateDefaultValue () {
@@ -224,17 +227,16 @@ class Type {
   _internalParse (context, validate) {
     // console.log('parse', this.constructor.name, this.helpFlags)
     let lastKeyMatchesAlias = false
-    let anyKeyMatchedAlias = false
     let previousUsedValue
     // iterate over each slurped arg and determine if its key-value pairs are relevant to this type/option
     context.slurped.forEach(arg => {
       // if the last key seen applies to this type, see if a keyless value applies as the value
       // e.g. --key value1 value2 => (1) k=key v=true, (2) k='' v=value1, (3) k='' v=value2
       //      does value1 apply to key? how about value2?
-      if (lastKeyMatchesAlias && arg.parsed.length === 1 && !arg.parsed[0].key && this.isApplicable(arg.parsed[0].value, previousUsedValue, arg)) {
+      if (lastKeyMatchesAlias && arg.parsed.length === 1 && !arg.parsed[0].key && this.isApplicable(context, arg.parsed[0].value, previousUsedValue, arg)) {
         previousUsedValue = arg.parsed[0].value
-        this.setValue(previousUsedValue)
-        this.applySource(Type.SOURCE_FLAG, arg.index, arg.raw)
+        this.setValue(context, previousUsedValue)
+        this.applySource(context, Type.SOURCE_FLAG, arg.index, arg.raw)
         arg.parsed[0].claimed = true
         return
       }
@@ -244,20 +246,14 @@ class Type {
         let matchedAlias = this.aliases.find(alias => alias === kv.key)
         lastKeyMatchesAlias = !!matchedAlias
         if (matchedAlias) {
-          anyKeyMatchedAlias = true
-          this.observeAlias(matchedAlias)
+          this.observeAlias(context, matchedAlias)
           previousUsedValue = kv.value
-          this.setValue(previousUsedValue)
-          this.applySource(Type.SOURCE_FLAG, arg.index, arg.raw)
+          this.setValue(context, previousUsedValue)
+          this.applySource(context, Type.SOURCE_FLAG, arg.index, arg.raw)
           kv.claimed = true
         }
       })
     })
-
-    if (!anyKeyMatchedAlias) {
-      this.setValue(this.defaultVal)
-      this._source = Type.SOURCE_DEFAULT
-    }
 
     return validate ? this.validateParsed(context) : this.resolve()
   }
@@ -267,20 +263,20 @@ class Type {
     let promises = []
 
     promises.push(new Promise(resolve => {
-      if (this.isRequired && this.source === Type.SOURCE_DEFAULT) {
+      if (this.isRequired && context.lookupSourceValue(this.id) === Type.SOURCE_DEFAULT) {
         const msgAndArgs = { msg: '', args: [] }
-        this.buildRequiredMessage(msgAndArgs)
+        this.buildRequiredMessage(context, msgAndArgs)
         if (msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
       }
       resolve()
     }))
 
     promises.push(new Promise(resolve => {
-      if (this.isStrict && (this.source !== Type.SOURCE_DEFAULT || this.shouldValidateDefaultValue)) {
-        return Promise.resolve(this.validateValue(this.value, context)).then(isValid => {
+      if (this.isStrict && (context.lookupSourceValue(this.id) !== Type.SOURCE_DEFAULT || this.shouldValidateDefaultValue)) {
+        return Promise.resolve(this.validateValue(this.getValue(context), context)).then(isValid => {
           if (!isValid) {
             const msgAndArgs = { msg: '', args: [] }
-            this.buildInvalidMessage(msgAndArgs)
+            this.buildInvalidMessage(context, msgAndArgs)
             if (msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
           }
           resolve()
@@ -292,14 +288,14 @@ class Type {
     return Promise.all(promises).then(this.resolve)
   }
 
-  buildRequiredMessage (msgAndArgs) {
+  buildRequiredMessage (context, msgAndArgs) {
     msgAndArgs.msg = 'Missing required argument: %s'
     msgAndArgs.args = [this.aliases.join(' or ')]
   }
 
-  buildInvalidMessage (msgAndArgs) {
+  buildInvalidMessage (context, msgAndArgs) {
     msgAndArgs.msg = 'Value "%s" is invalid for argument %s.'
-    msgAndArgs.args = [this.value, this.aliases.join(' or ')]
+    msgAndArgs.args = [this.getValue(context), this.aliases.join(' or ')]
   }
 
   // async hook to execute after all parsing
@@ -308,58 +304,8 @@ class Type {
     return this.resolve()
   }
 
-  applySource (source, position, raw) {
-    this._source = source
-    this._addPosition(position)
-    this._addRaw(raw)
-  }
-
-  isApplicable (currentValue, previousValue, slurpedArg) {
-    // assumes (1) this type should hold a single value
-    // and (2) a non-string previous value was not explicit
-    // e.g. previous was not --key=value
-    return typeof previousValue !== 'string'
-  }
-
-  observeAlias (alias) {}
-
-  setValue (value) {
-    this._value = value
-  }
-
-  // == after parsing ==
-  get value () {
-    return this._value
-  }
-
-  // subtype impls can be async (return a promise)
-  validateValue (value, context) {
-    return true
-  }
-
-  get source () {
-    return this._source
-  }
-
-  _addPosition (p) {
-    this._position = (this._position || []).concat(p)
-  }
-
-  get position () {
-    return this._position
-  }
-
-  _addRaw (r) {
-    this._raw = (this._raw || []).concat(r)
-  }
-
-  get raw () {
-    return this._raw
-  }
-
-  reset () {
-    this._value = this._defaultVal
-    this._source = Type.SOURCE_DEFAULT
+  applySource (context, source, position, raw) {
+    context.employSource(this.id, source, position, raw)
     // source precedence, most to least direct (for future reference):
     // 1. prompt (interactive mode only)
     // 2. arg
@@ -367,8 +313,28 @@ class Type {
     // 4. env
     // 5. configfile
     // 6. default
-    this._position = []
-    this._raw = []
+  }
+
+  isApplicable (context, currentValue, previousValue, slurpedArg) {
+    // assumes (1) this type should hold a single value
+    // and (2) a non-string previous value was not explicit
+    // e.g. previous was not --key=value
+    return typeof previousValue !== 'string'
+  }
+
+  observeAlias (context, alias) {}
+
+  setValue (context, value) {
+    context.assignValue(this.id, value)
+  }
+
+  getValue (context) {
+    return context.lookupValue(this.id)
+  }
+
+  // subtype impls can be async (return a promise)
+  validateValue (value, context) {
+    return true
   }
 
   toObject () {
@@ -383,15 +349,11 @@ class Type {
       helpHints: this.helpHints,
       helpGroup: this.helpGroup,
       isHidden: this.isHidden
-      // populated via parse
-      // value: this.value,
-      // source: this.source,
-      // position: this.position,
-      // raw: this.raw
     }
   }
 
-  toResult (shouldCoerce) {
+  toResult (context, shouldCoerce) {
+    const obj = context.lookupSource(this.id)
     return {
       // populated via config
       parent: this.parent,
@@ -403,10 +365,10 @@ class Type {
       // helpHints: this.helpHints,
       // helpGroup: this.helpGroup,
       // populated via parse
-      value: shouldCoerce ? this.coerceHandler(this.value) : this.value,
-      source: this.source,
-      position: this.position,
-      raw: this.raw
+      value: shouldCoerce ? this.coerceHandler(this.getValue(context)) : this.getValue(context),
+      source: obj && obj.source,
+      position: obj && obj.position,
+      raw: obj && obj.raw
     }
   }
 }

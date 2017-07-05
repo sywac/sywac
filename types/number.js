@@ -15,13 +15,14 @@ class TypeNumber extends Type {
     return 'number'
   }
 
-  get value () {
-    if (typeof this._value === 'undefined' || this._value === null) return this._value
-    return TypeNumber.isNumber(this._value) ? Number(this._value) : NaN
+  getValue (context) {
+    const v = context.lookupValue(this.id)
+    if (typeof v === 'undefined' || v === null) return v
+    return TypeNumber.isNumber(v) ? Number(v) : NaN
   }
 
-  setValue (value) {
-    this._value = typeof value === 'boolean' ? NaN : value
+  setValue (context, value) {
+    context.assignValue(this.id, typeof value === 'boolean' ? NaN : value)
   }
 
   // this is only checked if isStrict
@@ -29,8 +30,8 @@ class TypeNumber extends Type {
     return TypeNumber.isNumber(value) && !isNaN(value)
   }
 
-  buildInvalidMessage (msgAndArgs) {
-    super.buildInvalidMessage(msgAndArgs)
+  buildInvalidMessage (context, msgAndArgs) {
+    super.buildInvalidMessage(context, msgAndArgs)
     msgAndArgs.msg += ' Please specify a number.'
   }
 }

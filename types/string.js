@@ -7,22 +7,18 @@ class TypeString extends Type {
     return new TypeString(opts)
   }
 
-  // constructor (opts) {
-  //   super(opts)
-  // }
-
   get datatype () {
     return 'string'
   }
 
-  get value () {
-    if (typeof this._value === 'undefined' || this._value === null) return this._value
-    return String(this._value)
+  getValue (context) {
+    const v = context.lookupValue(this.id)
+    if (typeof v === 'undefined' || v === null) return v
+    return String(v)
   }
 
-  setValue (value) {
-    // console.log('string.js > setValue:', value)
-    this._value = typeof value === 'boolean' ? '' : value
+  setValue (context, value) {
+    context.assignValue(this.id, typeof value === 'boolean' ? '' : value)
   }
 }
 
