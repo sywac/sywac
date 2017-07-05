@@ -72,10 +72,6 @@ class TypePositional extends TypeWrapper {
     this.elementType.applySource(context, source, position, raw)
   }
 
-  get source () {
-    return this.elementType.source
-  }
-
   toResult (context, shouldCoerce) {
     return this.elementType.toResult(context, shouldCoerce)
   }

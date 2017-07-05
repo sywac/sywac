@@ -132,7 +132,7 @@ class TypeUnknown extends Type {
   _populatePositionals (unparsed, context) {
     // filter out positionals already populated via flags
     // (can populate via flags or positional args, but not both at same time)
-    let positionals = this.positionals.filter(p => p.source !== Type.SOURCE_FLAG)
+    let positionals = this.positionals.filter(p => context.lookupSourceValue(p.id) !== Type.SOURCE_FLAG)
     let numRequiredLeft = positionals.filter(p => p.isRequired).length
     let current = positionals.shift()
     let numArgsLeft = unparsed.length
