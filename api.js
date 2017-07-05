@@ -1,5 +1,7 @@
 'use strict'
 
+const SOURCE_DEFAULT = require('./types/type').SOURCE_DEFAULT
+
 class Api {
   static get DEFAULT_COMMAND_INDICATOR () {
     return '*'
@@ -505,7 +507,15 @@ class Api {
   parse (args) {
     // init context and kick off recursive type parsing/execution
     let context = this.initContext(false).slurpArgs(args)
+
+    // init unknownType in context only for the top-level (all levels share/overwrite the same argv._)
+    if (this.unknownType) {
+      this.unknownType.setValue(context, this.unknownType.defaultVal)
+      this.unknownType.applySource(context, SOURCE_DEFAULT)
+    }
+
     if (this._showHelpByDefault && !context.details.args.length) context.deferHelp() // preemptively request help
+
     return this.parseFromContext(context).then(whenDone => {
       if (context.helpRequested && !context.output) {
         context.addDeferredHelp(this.initHelpBuffer())
@@ -518,12 +528,6 @@ class Api {
     }).catch(err => {
       context.unexpectedError(err)
     }).then(whenDone => {
-      try {
-        this.types.forEach(type => type.reset())
-        if (this.unknownType) this.unknownType.reset()
-      } catch (err) {
-        context.unexpectedError(err)
-      }
       return context.toResult()
     })
   }
@@ -561,11 +565,11 @@ class Api {
     }).then(whenDone => {
       // once all parsing is complete, populate argv in context (sync)
       // first add unknownType to context.argv (because it's needed to determine shouldCoerceAndCheck)
-      if (this.unknownType) context.populateArgv([this.unknownType.toResult(true)])
+      if (this.unknownType) context.populateArgv([this.unknownType.toResult(context, true)])
       // next determine shouldCoerceAndCheck
       const shouldCoerceAndCheck = this.shouldCoerceAndCheck(context, hasCommands, hasDefaultCommand)
       // then populate argv with other types, letting them know if it makes sense to apply coercion
-      context.populateArgv(this.types.map(type => type.toResult(shouldCoerceAndCheck)))
+      context.populateArgv(this.types.map(type => type.toResult(context, shouldCoerceAndCheck)))
 
       // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
 
@@ -587,7 +591,11 @@ class Api {
   }
 
   applyTypes (context) {
-    context.pushLevel(this.name, this.types.map(type => type.toObject()))
+    context.pushLevel(this.name, this.types.map(type => {
+      type.setValue(context, type.defaultVal)
+      type.applySource(context, SOURCE_DEFAULT)
+      return type.toObject()
+    }))
     return context
   }
 

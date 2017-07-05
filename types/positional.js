@@ -63,26 +63,21 @@ class TypePositional extends TypeWrapper {
   }
 
   // called by unknownType
-  setValue (value) {
-    this.elementType.setValue(value)
+  setValue (context, value) {
+    this.elementType.setValue(context, value)
   }
 
   // called by unknownType
-  applySource (source, position, raw) {
-    this.elementType.applySource(source, position, raw)
+  applySource (context, source, position, raw) {
+    this.elementType.applySource(context, source, position, raw)
   }
 
   get source () {
     return this.elementType.source
   }
 
-  reset () {
-    super.reset()
-    this.elementType.reset()
-  }
-
-  toResult (shouldCoerce) {
-    return this.elementType.toResult(shouldCoerce)
+  toResult (context, shouldCoerce) {
+    return this.elementType.toResult(context, shouldCoerce)
   }
 }
 

@@ -47,8 +47,8 @@ class TypeEnum extends TypeString {
     })
   }
 
-  buildInvalidMessage (msgAndArgs) {
-    super.buildInvalidMessage(msgAndArgs)
+  buildInvalidMessage (context, msgAndArgs) {
+    super.buildInvalidMessage(context, msgAndArgs)
     if (this.choices.length) {
       msgAndArgs.msg += ' Choices are: %s'
       msgAndArgs.args.push(this.choices.join(', '))

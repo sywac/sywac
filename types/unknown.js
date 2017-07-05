@@ -78,24 +78,20 @@ class TypeUnknown extends Type {
       if (implicitCommands.length) unparsed = this._tryImplicitCommand(unparsed, context, implicitCommands)
     }
 
-    // console.log(`unparsed before positionals`, unparsed)
     if (unparsed.length && this.positionals && this.positionals.length) {
-      unparsed = this._populatePositionals(unparsed)
-      // this.positionals.forEach(p => p.validateParsed(context))
+      unparsed = this._populatePositionals(unparsed, context)
     }
-    // console.log(`unparsed after positionals`, unparsed)
 
-    this._value = unparsed.map(arg => {
-      this._addPosition(arg.index)
-      this._addRaw(arg.raw)
+    const v = unparsed.map(arg => {
+      this.applySource(context, null, arg.index, arg.raw)
       return arg.raw
     }).concat(context.details.args.slice(context.args.length).map((arg, index) => {
-      this._addPosition(context.args.length + index)
-      this._addRaw(arg)
+      this.applySource(context, null, context.args.length + index, arg)
       return arg
     }))
+    context.assignValue(this.id, v)
 
-    if (this._value.length > 0) this._source = Type.SOURCE_POSITIONAL
+    if (v.length > 0) this.applySource(context, Type.SOURCE_POSITIONAL)
 
     if (this.positionals && this.positionals.length) {
       return Promise.all(this.positionals.map(p => p.validateParsed(context))).then(whenDone => super.resolve())
@@ -109,7 +105,7 @@ class TypeUnknown extends Type {
     let matched = implicitCommands.find(alias => alias === first.raw) // maybe indexOf would be better/faster?
     if (matched) {
       context.slurped[first.index].parsed[0].claimed = true
-      this.implicit[matched].implicitCommandFound(Type.SOURCE_POSITIONAL, first.index, first.raw, context)
+      this.implicit[matched].implicitCommandFound(context, Type.SOURCE_POSITIONAL, first.index, first.raw)
       return unparsed.slice(1)
     }
     return unparsed
@@ -133,7 +129,7 @@ class TypeUnknown extends Type {
   // b = two
   // c = three four
 
-  _populatePositionals (unparsed) {
+  _populatePositionals (unparsed, context) {
     // filter out positionals already populated via flags
     // (can populate via flags or positional args, but not both at same time)
     let positionals = this.positionals.filter(p => p.source !== Type.SOURCE_FLAG)
@@ -153,8 +149,8 @@ class TypeUnknown extends Type {
       }
 
       // assign value and decrement numArgsLeft
-      current.setValue(arg.raw)
-      current.applySource(Type.SOURCE_POSITIONAL, arg.index, arg.raw)
+      current.setValue(context, arg.raw)
+      current.applySource(context, Type.SOURCE_POSITIONAL, arg.index, arg.raw)
       numArgsLeft--
 
       // determine if we should move on to the next positional

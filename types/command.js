@@ -8,6 +8,11 @@ class TypeCommand extends Type {
     return new TypeCommand(opts)
   }
 
+  constructor (opts) {
+    // default value is for benefit of context.details.types
+    super(Object.assign({ defaultValue: false }, opts))
+  }
+
   configure (opts, override) {
     opts = opts || {}
     if (typeof override === 'undefined') override = true
@@ -87,11 +92,11 @@ class TypeCommand extends Type {
       let matchedArg = context.slurped.find(arg => arg.parsed.length === 1 && !arg.parsed[0].key && !arg.parsed[0].claimed)
       if (matchedArg) {
         matchedArg.parsed[0].claimed = true
-        this.applySource(Type.SOURCE_POSITIONAL, matchedArg.index, matchedArg.raw)
+        this.applySource(context, Type.SOURCE_POSITIONAL, matchedArg.index, matchedArg.raw)
       }
     }
-    this.setValue(true) // set this value to true for context.details
-    context.populateArgv([this.toResult()]) // apply value to context.details
+    this.setValue(context, true) // set this value to true for context.details
+    context.populateArgv([this.toResult(context)]) // apply value to context.details
 
     // add positionals from preconfigured opts
     if (typeof this._positionalDsl === 'string' && this._positionalDsl.length) {

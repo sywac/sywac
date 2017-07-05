@@ -30,9 +30,9 @@ class TypeImplicitCommand extends TypeBoolean {
     super.buildHelpHints(hints)
   }
 
-  implicitCommandFound (source, position, raw, context) {
-    this.setValue(true)
-    this.applySource(source, position, raw)
+  implicitCommandFound (context, source, position, raw) {
+    this.setValue(context, true)
+    this.applySource(context, source, position, raw)
   }
 }
 

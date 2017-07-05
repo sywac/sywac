@@ -16,6 +16,9 @@ class Context {
     // args to parse per type
     this.args = []
     this.slurped = []
+    // values by type, keyed by type.id
+    this.values = new Map()
+    this.sources = new Map()
     // results of parsing and validation
     this.code = 0
     this.output = ''
@@ -203,6 +206,35 @@ class Context {
     if (typeof this.versionRequested.version === 'function') this.output = this.versionRequested.version()
     else this.output = this.versionRequested.version
     return this
+  }
+
+  // weird method names make for easier code searching
+  assignValue (id, value) {
+    this.values.set(id, value)
+  }
+
+  lookupValue (id) {
+    return this.values.get(id)
+  }
+
+  employSource (id, source, position, raw) {
+    let obj = this.lookupSource(id)
+    if (!obj) {
+      obj = { source: undefined, position: [], raw: [] }
+      this.sources.set(id, obj)
+    }
+    if (typeof source === 'string') obj.source = source
+    if (typeof position === 'number') obj.position.push(position)
+    if (typeof raw === 'string') obj.raw.push(raw)
+  }
+
+  lookupSource (id) {
+    return this.sources.get(id)
+  }
+
+  lookupSourceValue (id) {
+    const obj = this.lookupSource(id)
+    return obj && obj.source
   }
 
   populateArgv (typeResults) {
