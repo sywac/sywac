@@ -22,6 +22,10 @@ class TypeEnum extends TypeString {
     return this
   }
 
+  get datatype () {
+    return 'enum'
+  }
+
   choice (c) {
     if (c) this._choices = this._choices.concat(c)
     return this
