@@ -4,7 +4,8 @@ const tap = require('tap')
 const Api = require('../../api')
 const TypeString = require('../../types/string')
 
-const helper = require('../helper').get('test-positional')
+const parent = 'test-positional'
+const helper = require('../helper').get(parent)
 const assertNoErrors = helper.assertNoErrors.bind(helper)
 const assertTypeDetails = helper.assertTypeDetails.bind(helper)
 
@@ -275,12 +276,12 @@ tap.test('positional > params as array', t => {
       { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
     ]
   }).initContext(true).types
-  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the required first arg')
-  t.equal(typeObjects['test-positional'][0].helpGroup, 'First argument:')
-  t.equal(typeObjects['test-positional'][0].helpHints, '[first]')
-  t.equal(typeObjects['test-positional'][1].helpDesc, 'The description for the optional second arg')
-  t.equal(typeObjects['test-positional'][1].helpGroup, 'Second argument:')
-  t.equal(typeObjects['test-positional'][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
+  t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects[parent][1].helpHints, '[second]')
   t.end()
 })
 
@@ -291,30 +292,30 @@ tap.test('positional > params as object', t => {
       two: { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
     }
   }).initContext(true).types
-  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the required first arg')
-  t.equal(typeObjects['test-positional'][0].helpGroup, 'First argument:')
-  t.equal(typeObjects['test-positional'][0].helpHints, '[first]')
-  t.equal(typeObjects['test-positional'][1].helpDesc, 'The description for the optional second arg')
-  t.equal(typeObjects['test-positional'][1].helpGroup, 'Second argument:')
-  t.equal(typeObjects['test-positional'][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
+  t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects[parent][1].helpHints, '[second]')
   t.end()
 })
 
 tap.test('positional > paramsDescription || paramsDesc', t => {
   let typeObjects = Api.get().positional('<one> [two]', {
-    paramsDescription: 'The description for the first arg'
+    paramsDescription: 'The description for the first arg' // single string for one positional
   }).initContext(true).types
-  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the first arg')
-  t.equal(typeObjects['test-positional'][1].helpDesc, '')
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the first arg')
+  t.equal(typeObjects[parent][1].helpDesc, '')
 
   typeObjects = Api.get().positional('<one> [two]', {
-    paramsDesc: [
+    paramsDesc: [ // array for multiple positionals
       'The description for the required first arg',
       'The description for the optional second arg'
     ]
   }).initContext(true).types
-  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the required first arg')
-  t.equal(typeObjects['test-positional'][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
   t.end()
 })
 
@@ -322,9 +323,20 @@ tap.test('positional > paramsGroup', t => {
   const typeObjects = Api.get().positional('<one> [two]', {
     paramsGroup: 'Parameters:'
   }).initContext(true).types
-  t.equal(typeObjects['test-positional'][0].helpGroup, 'Parameters:')
-  t.equal(typeObjects['test-positional'][1].helpGroup, 'Parameters:')
+  t.equal(typeObjects[parent][0].helpGroup, 'Parameters:')
+  t.equal(typeObjects[parent][1].helpGroup, 'Parameters:')
   t.end()
 })
 
-tap.test('positional > ignore')
+tap.test('positional > ignore', t => {
+  return Api.get()
+    .positional('<one> [options]', { ignore: '[options]' })
+    .parse('uno dos').then(result => {
+      assertNoErrors(t, result)
+      t.equal(result.argv.one, 'uno')
+      t.same(result.argv._, ['dos'])
+      t.equal(Object.keys(result.argv).length, 2)
+      assertTypeDetails(t, result, 0, ['_'], 'array:string', ['dos'], 'positional', [1], ['dos'])
+      assertTypeDetails(t, result, 1, ['one'], 'string', 'uno', 'positional', [0], ['uno'])
+    })
+})
