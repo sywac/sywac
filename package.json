@@ -33,6 +33,7 @@
   },
   "homepage": "http://sywac.io",
   "devDependencies": {
+    "require-uncached": "^1.0.3",
     "standard": "^10.0.2",
     "tap": "^10.7.0"
   }
