@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "pretest": "standard",
-    "test": "tap --cov test/*.js test/lib/*.js"
+    "test": "tap --cov test/test*.js test/lib/test*.js test/types/test*.js"
   },
   "engines": {
     "node": ">=4"

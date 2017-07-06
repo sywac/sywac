@@ -3,11 +3,14 @@
 const tap = require('tap')
 const Api = require('../api')
 
-tap.test('api parse > no explicit types', t => {
-  return Api.get().parse('-xyz hello there --xyz friend ------a=nice to see -u').then(result => {
-    t.equal(result.code, 0)
-    t.equal(result.output, '')
-    t.same(result.errors, [])
+const helper = require('./helper').get('test-parse')
+const assertNoErrors = helper.assertNoErrors.bind(helper)
+const assertTypeDetails = helper.assertTypeDetails.bind(helper)
+
+tap.test('parse > no explicit types', t => {
+  return Api.get().parse('-xyz hello  there --xyz friend ------a=nice to see -u').then(result => {
+    assertNoErrors(t, result)
+
     t.same(result.argv._, ['there', 'to', 'see'])
     t.equal(result.argv.x, true)
     t.equal(result.argv.y, true)
@@ -15,11 +18,16 @@ tap.test('api parse > no explicit types', t => {
     t.equal(result.argv.xyz, 'friend')
     t.equal(result.argv.a, 'nice')
     t.equal(result.argv.u, true)
+
     t.same(result.details.args, ['-xyz', 'hello', 'there', '--xyz', 'friend', '------a=nice', 'to', 'see', '-u'])
+
+    t.equal(result.details.types.length, 1)
+
+    assertTypeDetails(t, result, 0, ['_'], 'array:string', ['there', 'to', 'see'], 'positional', [2, 6, 7], ['there', 'to', 'see'])
   })
 })
 
-tap.test('api parse > basic types', t => {
+tap.test('parse > basic types', t => {
   return Api.get()
     .boolean('-b, --bool')
     .enumeration('-e, --enum <choice>', {
@@ -32,10 +40,8 @@ tap.test('api parse > basic types', t => {
     .string('-s, --string <str>')
     .parse('-b a --enum two b -n 0 c --path=local d e -f package.json f g --dir node_modules h -s "hello there" i')
     .then(result => {
-      t.equal(result.code, 0)
-      t.equal(result.output, '')
-      t.same(result.errors, [])
-      // argv
+      assertNoErrors(t, result)
+
       t.same(result.argv._, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
       t.equal(result.argv.b, true)
       t.equal(result.argv.bool, true)
@@ -54,84 +60,38 @@ tap.test('api parse > basic types', t => {
       t.equal(result.argv.s, 'hello there')
       t.equal(result.argv.string, 'hello there')
       t.notOk(result.argv.str)
-      // details.args
+
       t.same(result.details.args, [
         '-b', 'a', '--enum', 'two', 'b', '-n', '0', 'c', '--path=local', 'd',
         'e', '-f', 'package.json', 'f', 'g', '--dir', 'node_modules', 'h',
         '-s', 'hello there', 'i'
       ])
-      // details.types
-      t.equal(result.details.types[0].parent, 'test-parse')
-      t.same(result.details.types[0].aliases, ['_'])
-      t.equal(result.details.types[0].datatype, 'array:string')
-      t.same(result.details.types[0].value, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
-      t.equal(result.details.types[0].source, 'positional')
-      t.same(result.details.types[0].position, [1, 4, 7, 9, 10, 13, 14, 17, 20])
-      t.same(result.details.types[0].raw, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
 
-      t.equal(result.details.types[1].parent, 'test-parse')
-      t.same(result.details.types[1].aliases, ['b', 'bool'])
-      t.equal(result.details.types[1].datatype, 'boolean')
-      t.equal(result.details.types[1].value, true)
-      t.equal(result.details.types[1].source, 'flag')
-      t.same(result.details.types[1].position, [0])
-      t.same(result.details.types[1].raw, ['-b'])
+      t.equal(result.details.types.length, 8)
 
-      t.equal(result.details.types[2].parent, 'test-parse')
-      t.same(result.details.types[2].aliases, ['e', 'enum'])
-      t.equal(result.details.types[2].datatype, 'string')
-      t.equal(result.details.types[2].value, 'two')
-      t.equal(result.details.types[2].source, 'flag')
-      t.same(result.details.types[2].position, [2, 3])
-      t.same(result.details.types[2].raw, ['--enum', 'two'])
-
-      t.equal(result.details.types[3].parent, 'test-parse')
-      t.same(result.details.types[3].aliases, ['n', 'number'])
-      t.equal(result.details.types[3].datatype, 'number')
-      t.equal(result.details.types[3].value, 0)
-      t.equal(result.details.types[3].source, 'flag')
-      t.same(result.details.types[3].position, [5, 6])
-      t.same(result.details.types[3].raw, ['-n', '0'])
-
-      t.equal(result.details.types[4].parent, 'test-parse')
-      t.same(result.details.types[4].aliases, ['p', 'path'])
-      t.equal(result.details.types[4].datatype, 'path')
-      t.equal(result.details.types[4].value, 'local')
-      t.equal(result.details.types[4].source, 'flag')
-      t.same(result.details.types[4].position, [8])
-      t.same(result.details.types[4].raw, ['--path=local'])
-
-      t.equal(result.details.types[5].parent, 'test-parse')
-      t.same(result.details.types[5].aliases, ['f', 'file'])
-      t.equal(result.details.types[5].datatype, 'file')
-      t.equal(result.details.types[5].value, 'package.json')
-      t.equal(result.details.types[5].source, 'flag')
-      t.same(result.details.types[5].position, [11, 12])
-      t.same(result.details.types[5].raw, ['-f', 'package.json'])
-
-      t.equal(result.details.types[6].parent, 'test-parse')
-      t.same(result.details.types[6].aliases, ['d', 'dir'])
-      t.equal(result.details.types[6].datatype, 'dir')
-      t.equal(result.details.types[6].value, 'node_modules')
-      t.equal(result.details.types[6].source, 'flag')
-      t.same(result.details.types[6].position, [15, 16])
-      t.same(result.details.types[6].raw, ['--dir', 'node_modules'])
-
-      t.equal(result.details.types[7].parent, 'test-parse')
-      t.same(result.details.types[7].aliases, ['s', 'string'])
-      t.equal(result.details.types[7].datatype, 'string')
-      t.equal(result.details.types[7].value, 'hello there')
-      t.equal(result.details.types[7].source, 'flag')
-      t.same(result.details.types[7].position, [18, 19])
-      t.same(result.details.types[7].raw, ['-s', 'hello there'])
+      assertTypeDetails(t, result,
+        0, ['_'], 'array:string',
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'],
+        'positional',
+        [1, 4, 7, 9, 10, 13, 14, 17, 20],
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+      )
+      assertTypeDetails(t, result, 1, ['b', 'bool'], 'boolean', true, 'flag', [0], ['-b'])
+      assertTypeDetails(t, result, 2, ['e', 'enum'], 'enum', 'two', 'flag', [2, 3], ['--enum', 'two'])
+      assertTypeDetails(t, result, 3, ['n', 'number'], 'number', 0, 'flag', [5, 6], ['-n', '0'])
+      assertTypeDetails(t, result, 4, ['p', 'path'], 'path', 'local', 'flag', [8], ['--path=local'])
+      assertTypeDetails(t, result, 5, ['f', 'file'], 'file', 'package.json', 'flag', [11, 12], ['-f', 'package.json'])
+      assertTypeDetails(t, result, 6, ['d', 'dir'], 'dir', 'node_modules', 'flag', [15, 16], ['--dir', 'node_modules'])
+      assertTypeDetails(t, result, 7, ['s', 'string'], 'string', 'hello there', 'flag', [18, 19], ['-s', 'hello there'])
     })
 })
 
-tap.test('api parse > multiple sequential passes', t => {
+tap.test('parse > multiple sequential passes', t => {
   const api = Api.get()
     .option('-b | --bool', { type: 'boolean' })
     .option('-s | --str', { type: 'string' })
   return api.parse('').then(result => {
+    assertNoErrors(t, result)
     t.equal(result.argv.b, false)
     t.equal(result.argv.bool, false)
     t.equal(result.argv.s, undefined)
@@ -139,6 +99,7 @@ tap.test('api parse > multiple sequential passes', t => {
     t.same(result.argv._, [])
     return api.parse('--bool false -s')
   }).then(result => {
+    assertNoErrors(t, result)
     t.equal(result.argv.b, false)
     t.equal(result.argv.bool, false)
     t.equal(result.argv.s, '')
@@ -146,6 +107,7 @@ tap.test('api parse > multiple sequential passes', t => {
     t.same(result.argv._, [])
     return api.parse(['hi', '--str', 'there', '-b=true'])
   }).then(result => {
+    assertNoErrors(t, result)
     t.equal(result.argv.b, true)
     t.equal(result.argv.bool, true)
     t.equal(result.argv.s, 'there')
@@ -154,12 +116,13 @@ tap.test('api parse > multiple sequential passes', t => {
   })
 })
 
-tap.test('api parse > multiple concurrent passes', t => {
+tap.test('parse > multiple concurrent passes', t => {
   const api = Api.get()
     .boolean('--bool | -b')
     .string('--str  | -s <value>')
   const promises = []
   promises.push(api.parse('-b -s one').then(result => {
+    assertNoErrors(t, result)
     t.equal(result.argv.b, true)
     t.equal(result.argv.bool, true)
     t.equal(result.argv.s, 'one')
@@ -167,6 +130,7 @@ tap.test('api parse > multiple concurrent passes', t => {
     t.same(result.argv._, [])
   }))
   promises.push(api.parse('--str two second').then(result => {
+    assertNoErrors(t, result)
     t.equal(result.argv.b, false)
     t.equal(result.argv.bool, false)
     t.equal(result.argv.s, 'two')
@@ -174,6 +138,7 @@ tap.test('api parse > multiple concurrent passes', t => {
     t.same(result.argv._, ['second'])
   }))
   promises.push(api.parse('third --bool').then(result => {
+    assertNoErrors(t, result)
     t.equal(result.argv.b, true)
     t.equal(result.argv.bool, true)
     t.equal(result.argv.s, undefined)
@@ -183,9 +148,18 @@ tap.test('api parse > multiple concurrent passes', t => {
   return Promise.all(promises)
 })
 
-tap.test('api parse > array types')
-tap.test('api parse > strict types')
-tap.test('api parse > help')
-tap.test('api parse > version')
-tap.test('api parse > top-level positionals')
-tap.test('api parse > commands')
+tap.test('parse > required types')
+tap.test('parse > strict types')
+tap.test('parse > coerced types')
+// every type can test:
+// - aliases without flags
+// - flags without aliases
+// - no flags or aliases ??
+// - defaultValue
+// - required
+// - strict
+// - coerce
+// - description || desc
+// - hints
+// - group
+// - hidden

@@ -6,40 +6,40 @@ const Utils = require('../../lib/utils')
 const utils = Utils.get()
 const flags = '\u001b[32m-k, --key\u001b[39m \u001b[31m<\u001b[39m\u001b[90mvalue\u001b[39m\u001b[31m>\u001b[39m'
 
-tap.test('utils constructor > configurable ansiRegex', t => {
+tap.test('utils > configurable ansiRegex', t => {
   const regex = /x/g
   t.equal(new Utils({ ansiRegex: regex }).ansiRegex, regex)
   t.end()
 })
 
-tap.test('utils stripAnsi', t => {
+tap.test('utils > stripAnsi', t => {
   t.equal(utils.stripAnsi(flags), '-k, --key <value>')
   t.end()
 })
 
-tap.test('utils normalizeAlias', t => {
+tap.test('utils > normalizeAlias', t => {
   t.equal(utils.normalizeAlias(flags), 'k')
   t.end()
 })
 
-tap.test('utils normalizeAliases', t => {
+tap.test('utils > normalizeAliases', t => {
   t.same(utils.normalizeAliases(['\u001b[32m-k\u001b[39m', '\u001b[32m--key\u001b[39m']), ['k', 'key'])
   t.end()
 })
 
-tap.test('utils aliasesToFlags', t => {
+tap.test('utils > aliasesToFlags', t => {
   t.equal(utils.aliasesToFlags(['\u001b[32mk\u001b[39m', '\u001b[32mkey\u001b[39m']), '-\u001b[32mk\u001b[39m, --\u001b[32mkey\u001b[39m')
   t.end()
 })
 
-tap.test('utils flagsToAliases', t => {
+tap.test('utils > flagsToAliases', t => {
   t.same(utils.flagsToAliases(flags), ['k', 'key'])
   t.same(utils.flagsToAliases('-k --key <value>'), ['k', 'key'])
   t.same(utils.flagsToAliases('k|key <value>'), ['k', 'key'])
   t.end()
 })
 
-tap.test('utils inferPositionalProperties', t => {
+tap.test('utils > inferPositionalProperties', t => {
   const validTypes = ['string', 'number', 'array', 'file', 'dir', 'path']
   t.same(utils.inferPositionalProperties('[-c|--charlie] <charlie:string=some val>', validTypes), {
     flags: '-c|--charlie',
@@ -81,17 +81,17 @@ tap.test('utils inferPositionalProperties', t => {
   t.end()
 })
 
-tap.test('utils stringToMultiPositional', t => {
+tap.test('utils > stringToMultiPositional', t => {
   t.same(utils.stringToMultiPositional('<one> [--weird] [-t] [two]'), ['<one>', '[--weird]', '[-t] [two]'])
   t.end()
 })
 
-tap.test('utils stringToArgs', t => {
+tap.test('utils > stringToArgs', t => {
   t.same(utils.stringToArgs(`-k -v 'won\\'t keep' one "two three" "x`), ['-k', '-v', 'won\'t keep', 'one', 'two three', 'x'])
   t.end()
 })
 
-tap.test('utils isSpace', t => {
+tap.test('utils > isSpace', t => {
   t.equal(utils.isSpace(' '), true)
   t.equal(utils.isSpace('\t'), true)
   t.equal(utils.isSpace('\n'), true)
@@ -102,7 +102,7 @@ tap.test('utils isSpace', t => {
   t.end()
 })
 
-tap.test('utils sameArrays', t => {
+tap.test('utils > sameArrays', t => {
   t.equal(utils.sameArrays(['k', 'key'], ['k', 'key']), true)
   t.equal(utils.sameArrays(['v'], ['h']), false)
   t.equal(utils.sameArrays(['one', 'two'], ['one']), false)
