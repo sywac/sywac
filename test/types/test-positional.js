@@ -2,6 +2,7 @@
 
 const tap = require('tap')
 const Api = require('../../api')
+const TypeString = require('../../types/string')
 
 const helper = require('../helper').get('test-positional')
 const assertNoErrors = helper.assertNoErrors.bind(helper)
@@ -158,13 +159,172 @@ tap.test('positional > dsl for flags', t => {
   return Promise.all(promises)
 })
 
-tap.test('positional > dsl for type')
-tap.test('positional > dsl supports custom type/factory')
-tap.test('positional > dsl for variadics')
-tap.test('positional > variadics driven by type')
-tap.test('positional > dsl for default value')
-tap.test('positional > params as array')
-tap.test('positional > params as object')
-tap.test('positional > paramsDescription || paramsDesc')
-tap.test('positional > paramsGroup')
+tap.test('positional > dsl for type', t => {
+  const promises = []
+  promises.push(Api.get().positional('<array>').parse('a b').then(result => {
+    assertNoErrors(t, result)
+    t.same(result.argv.array, ['a', 'b'])
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['array'], 'array:string', ['a', 'b'], 'positional', [0, 1], ['a', 'b'])
+  }))
+  promises.push(Api.get().positional('<sum:array:number>').parse('1 2 3').then(result => {
+    assertNoErrors(t, result)
+    t.same(result.argv.sum, [1, 2, 3])
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['sum'], 'array:number', [1, 2, 3], 'positional', [0, 1, 2], ['1', '2', '3'])
+  }))
+  promises.push(Api.get().positional('[port:number]').parse('80').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.port, 80)
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['port'], 'number', 80, 'positional', [0], ['80'])
+  }))
+  promises.push(Api.get().positional('<path>').parse('/home').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.path, '/home')
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['path'], 'path', '/home', 'positional', [0], ['/home'])
+  }))
+  promises.push(Api.get().positional('<path:file>').parse('package.json').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.path, 'package.json')
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['path'], 'file', 'package.json', 'positional', [0], ['package.json'])
+  }))
+  promises.push(Api.get().positional('<choice:enum>', { params: [{ choices: ['y', 'n'] }] }).parse('y').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.choice, 'y')
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['choice'], 'enum', 'y', 'positional', [0], ['y'])
+  }))
+  return Promise.all(promises)
+})
+
+tap.test('positional > dsl supports custom type/factory', t => {
+  class Mod extends TypeString { get datatype () { return 'custom' } }
+  return Api.get().registerFactory('mod', opts => new Mod(opts)).positional('thing:mod').parse('test').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.thing, 'test')
+    t.equal(Object.keys(result.argv).length, 2)
+    assertTypeDetails(t, result, 1, ['thing'], 'custom', 'test', 'positional', [0], ['test'])
+  })
+})
+
+tap.test('positional > dsl for variadics', t => {
+  const promises = []
+
+  promises.push(Api.get().positional('<a> <b> <c..>').parse('one two three four').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.a, 'one')
+    t.equal(result.argv.b, 'two')
+    t.same(result.argv.c, ['three', 'four'])
+    assertTypeDetails(t, result, 1, ['a'], 'string', 'one', 'positional', [0], ['one'])
+    assertTypeDetails(t, result, 2, ['b'], 'string', 'two', 'positional', [1], ['two'])
+    assertTypeDetails(t, result, 3, ['c'], 'array:string', ['three', 'four'], 'positional', [2, 3], ['three', 'four'])
+  }))
+
+  promises.push(Api.get().positional('<a> <b..> <c>').parse('one two three four').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.a, 'one')
+    t.same(result.argv.b, ['two', 'three'])
+    t.equal(result.argv.c, 'four')
+    assertTypeDetails(t, result, 1, ['a'], 'string', 'one', 'positional', [0], ['one'])
+    assertTypeDetails(t, result, 2, ['b'], 'array:string', ['two', 'three'], 'positional', [1, 2], ['two', 'three'])
+    assertTypeDetails(t, result, 3, ['c'], 'string', 'four', 'positional', [3], ['four'])
+  }))
+
+  promises.push(Api.get().positional('<a..> <b..> <c>').parse('one two three four').then(result => {
+    assertNoErrors(t, result)
+    t.same(result.argv.a, ['one', 'two'])
+    t.same(result.argv.b, ['three'])
+    t.equal(result.argv.c, 'four')
+    assertTypeDetails(t, result, 1, ['a'], 'array:string', ['one', 'two'], 'positional', [0, 1], ['one', 'two'])
+    assertTypeDetails(t, result, 2, ['b'], 'array:string', ['three'], 'positional', [2], ['three'])
+    assertTypeDetails(t, result, 3, ['c'], 'string', 'four', 'positional', [3], ['four'])
+  }))
+
+  return Promise.all(promises)
+})
+
+tap.test('positional > dsl for default value', t => {
+  const api = Api.get().positional('[file=package.json] [port:number=8080] [svcs..=one,two]')
+  return api.parse('').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.file, 'package.json')
+    t.equal(result.argv.port, 8080)
+    t.same(result.argv.svcs, ['one', 'two'])
+    assertTypeDetails(t, result, 1, ['file'], 'file', 'package.json', 'default', [], [])
+    assertTypeDetails(t, result, 2, ['port'], 'number', 8080, 'default', [], [])
+    assertTypeDetails(t, result, 3, ['svcs'], 'array:string', ['one', 'two'], 'default', [], [])
+    return api.parse('config.json 4000 all')
+  }).then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.file, 'config.json')
+    t.equal(result.argv.port, 4000)
+    t.same(result.argv.svcs, ['all'])
+    assertTypeDetails(t, result, 1, ['file'], 'file', 'config.json', 'positional', [0], ['config.json'])
+    assertTypeDetails(t, result, 2, ['port'], 'number', 4000, 'positional', [1], ['4000'])
+    assertTypeDetails(t, result, 3, ['svcs'], 'array:string', ['all'], 'positional', [2], ['all'])
+  })
+})
+
+tap.test('positional > params as array', t => {
+  const typeObjects = Api.get().positional('<one> [two]', {
+    params: [
+      { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+      { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+    ]
+  }).initContext(true).types
+  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects['test-positional'][0].helpGroup, 'First argument:')
+  t.equal(typeObjects['test-positional'][0].helpHints, '[first]')
+  t.equal(typeObjects['test-positional'][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects['test-positional'][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects['test-positional'][1].helpHints, '[second]')
+  t.end()
+})
+
+tap.test('positional > params as object', t => {
+  const typeObjects = Api.get().positional('<one> [two]', {
+    params: {
+      one: { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+      two: { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+    }
+  }).initContext(true).types
+  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects['test-positional'][0].helpGroup, 'First argument:')
+  t.equal(typeObjects['test-positional'][0].helpHints, '[first]')
+  t.equal(typeObjects['test-positional'][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects['test-positional'][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects['test-positional'][1].helpHints, '[second]')
+  t.end()
+})
+
+tap.test('positional > paramsDescription || paramsDesc', t => {
+  let typeObjects = Api.get().positional('<one> [two]', {
+    paramsDescription: 'The description for the first arg'
+  }).initContext(true).types
+  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the first arg')
+  t.equal(typeObjects['test-positional'][1].helpDesc, '')
+
+  typeObjects = Api.get().positional('<one> [two]', {
+    paramsDesc: [
+      'The description for the required first arg',
+      'The description for the optional second arg'
+    ]
+  }).initContext(true).types
+  t.equal(typeObjects['test-positional'][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects['test-positional'][1].helpDesc, 'The description for the optional second arg')
+  t.end()
+})
+
+tap.test('positional > paramsGroup', t => {
+  const typeObjects = Api.get().positional('<one> [two]', {
+    paramsGroup: 'Parameters:'
+  }).initContext(true).types
+  t.equal(typeObjects['test-positional'][0].helpGroup, 'Parameters:')
+  t.equal(typeObjects['test-positional'][1].helpGroup, 'Parameters:')
+  t.end()
+})
+
 tap.test('positional > ignore')
