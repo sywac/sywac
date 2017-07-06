@@ -270,11 +270,12 @@ tap.test('positional > dsl for default value', t => {
 })
 
 tap.test('positional > params as array', t => {
+  const params = [
+    { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+    { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+  ]
   const typeObjects = Api.get().positional('<one> [two]', {
-    params: [
-      { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
-      { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
-    ]
+    params: params
   }).initContext(true).types
   t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
   t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
@@ -282,15 +283,26 @@ tap.test('positional > params as array', t => {
   t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
   t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
   t.equal(typeObjects[parent][1].helpHints, '[second]')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(params.length, 2)
+  t.equal(Object.keys(params[0]).length, 3)
+  t.equal(params[0].desc, 'The description for the required first arg')
+  t.equal(params[0].group, 'First argument:')
+  t.equal(params[0].hints, '[first]')
+  t.equal(Object.keys(params[1]).length, 3)
+  t.equal(params[1].desc, 'The description for the optional second arg')
+  t.equal(params[1].group, 'Second argument:')
+  t.equal(params[1].hints, '[second]')
   t.end()
 })
 
 tap.test('positional > params as object', t => {
+  const params = {
+    one: { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+    two: { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+  }
   const typeObjects = Api.get().positional('<one> [two]', {
-    params: {
-      one: { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
-      two: { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
-    }
+    params: params
   }).initContext(true).types
   t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
   t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
@@ -298,39 +310,58 @@ tap.test('positional > params as object', t => {
   t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
   t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
   t.equal(typeObjects[parent][1].helpHints, '[second]')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(Object.keys(params).length, 2)
+  t.equal(Object.keys(params['one']).length, 3)
+  t.equal(params['one'].desc, 'The description for the required first arg')
+  t.equal(params['one'].group, 'First argument:')
+  t.equal(params['one'].hints, '[first]')
+  t.equal(Object.keys(params['two']).length, 3)
+  t.equal(params['two'].desc, 'The description for the optional second arg')
+  t.equal(params['two'].group, 'Second argument:')
+  t.equal(params['two'].hints, '[second]')
   t.end()
 })
 
 tap.test('positional > paramsDescription || paramsDesc', t => {
-  let typeObjects = Api.get().positional('<one> [two]', {
-    paramsDescription: 'The description for the first arg' // single string for one positional
-  }).initContext(true).types
+  let opts = { paramsDescription: 'The description for the first arg' } // single string for one positional
+  let typeObjects = Api.get().positional('<one> [two]', opts).initContext(true).types
   t.equal(typeObjects[parent][0].helpDesc, 'The description for the first arg')
   t.equal(typeObjects[parent][1].helpDesc, '')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(Object.keys(opts).length, 1)
+  t.equal(opts.paramsDescription, 'The description for the first arg')
 
-  typeObjects = Api.get().positional('<one> [two]', {
+  opts = {
     paramsDesc: [ // array for multiple positionals
       'The description for the required first arg',
       'The description for the optional second arg'
     ]
-  }).initContext(true).types
+  }
+  typeObjects = Api.get().positional('<one> [two]', opts).initContext(true).types
   t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
   t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(Object.keys(opts).length, 1)
+  t.same(opts.paramsDesc, ['The description for the required first arg', 'The description for the optional second arg'])
   t.end()
 })
 
 tap.test('positional > paramsGroup', t => {
-  const typeObjects = Api.get().positional('<one> [two]', {
-    paramsGroup: 'Parameters:'
-  }).initContext(true).types
+  const opts = { paramsGroup: 'Parameters:' }
+  const typeObjects = Api.get().positional('<one> [two]', opts).initContext(true).types
   t.equal(typeObjects[parent][0].helpGroup, 'Parameters:')
   t.equal(typeObjects[parent][1].helpGroup, 'Parameters:')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(Object.keys(opts).length, 1)
+  t.equal(opts.paramsGroup, 'Parameters:')
   t.end()
 })
 
 tap.test('positional > ignore', t => {
+  const opts = { ignore: '[options]' }
   return Api.get()
-    .positional('<one> [options]', { ignore: '[options]' })
+    .positional('<one> [options]', opts)
     .parse('uno dos').then(result => {
       assertNoErrors(t, result)
       t.equal(result.argv.one, 'uno')
@@ -338,5 +369,8 @@ tap.test('positional > ignore', t => {
       t.equal(Object.keys(result.argv).length, 2)
       assertTypeDetails(t, result, 0, ['_'], 'array:string', ['dos'], 'positional', [1], ['dos'])
       assertTypeDetails(t, result, 1, ['one'], 'string', 'uno', 'positional', [0], ['uno'])
+      // assert that the call to positional() didn't modify the objects given
+      t.equal(Object.keys(opts).length, 1)
+      t.equal(opts.ignore, '[options]')
     })
 })

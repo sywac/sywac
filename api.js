@@ -284,17 +284,17 @@ class Api {
   }
 
   positional (dsl, opts) {
-    opts = opts || {}
+    opts = Object.assign({}, opts) // copy object so we don't alter object with external refs
     let addedToHelp = false
 
     // TODO this logic is repetitive and messy
     if (Array.isArray(dsl)) {
-      opts.params = dsl
+      opts.params = dsl.slice()
     } else if (typeof dsl === 'object') {
-      if (dsl.params) opts = dsl
-      else opts.params = dsl
+      if (dsl.params) opts = Object.assign({}, dsl)
+      else opts.params = Object.assign({}, dsl)
     } else if (typeof dsl === 'string') {
-      this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(dsl)
+      this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(dsl) // TODO DO NOT ADD MORE THAN ONCE ACROSS MULTIPLE RUNS
       addedToHelp = true
       let array = this.utils.stringToMultiPositional(dsl)
       if (!opts.params) {
@@ -306,7 +306,7 @@ class Api {
       } else {
         opts.params = Object.keys(opts.params).map((key, index) => {
           let obj = opts.params[key]
-          if (obj && !obj.flags) obj.flags = array[index]
+          if (obj && !obj.flags) obj = Object.assign({flags: array[index]}, obj)
           // if (obj && !obj.aliases) obj.aliases = key
           return obj
         })
@@ -315,9 +315,9 @@ class Api {
 
     opts.ignore = [].concat(opts.ignore).filter(Boolean)
 
-    let params = Array.isArray(opts.params) ? opts.params : Object.keys(opts.params).map(key => {
+    let params = Array.isArray(opts.params) ? opts.params.slice() : Object.keys(opts.params).map(key => {
       let obj = opts.params[key]
-      if (obj && !obj.flags) obj.flags = key
+      if (obj && !obj.flags) obj = Object.assign({flags: key}, obj)
       return obj
     })
 
@@ -327,6 +327,7 @@ class Api {
 
       // accept an array of strings or objects
       if (typeof param === 'string') param = { flags: param }
+      else param = Object.assign({}, param)
       if (!param.flags && param.aliases) param.flags = [].concat(param.aliases)[0]
 
       if (!addedToHelp) this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(param.flags)
