@@ -4,7 +4,8 @@ const tap = require('tap')
 const Api = require('../../api')
 const TypeArray = require('../../types/array')
 
-const helper = require('../helper').get('test-array')
+const parent = require('path').basename(__filename, '.js')
+const helper = require('../helper').get(parent)
 const assertNoErrors = helper.assertNoErrors.bind(helper)
 const assertTypeDetails = helper.assertTypeDetails.bind(helper)
 

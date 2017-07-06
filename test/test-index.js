@@ -70,6 +70,6 @@ tap.test('index > configured singleton api', t => {
       t.equal(customUtilsCalled, true)
       h.assertTypeDetails(t, result, 1, ['s', 'string'], 'custom', 'value', 'flag', [0], ['--string=value'])
       h.assertTypeDetails(t, result, 2, ['b', 'bool'], 'boolean', true, 'flag', [1], ['--bool'])
-      Helper.get('test-index').assertTypeDetails(t, result, 0, ['_'], 'array:string', ['one'], 'positional', [2], ['one'])
+      Helper.get(require('path').basename(__filename, '.js')).assertTypeDetails(t, result, 0, ['_'], 'array:string', ['one'], 'positional', [2], ['one'])
     })
 })

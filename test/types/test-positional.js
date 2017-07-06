@@ -4,7 +4,7 @@ const tap = require('tap')
 const Api = require('../../api')
 const TypeString = require('../../types/string')
 
-const parent = 'test-positional'
+const parent = require('path').basename(__filename, '.js')
 const helper = require('../helper').get(parent)
 const assertNoErrors = helper.assertNoErrors.bind(helper)
 const assertTypeDetails = helper.assertTypeDetails.bind(helper)
