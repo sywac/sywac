@@ -82,6 +82,7 @@ class TypeUnknown extends Type {
       unparsed = this._populatePositionals(unparsed, context)
     }
 
+    context.resetSource(this.id, Type.SOURCE_DEFAULT)
     const v = unparsed.map(arg => {
       this.applySource(context, null, arg.index, arg.raw)
       return arg.raw

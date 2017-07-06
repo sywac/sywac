@@ -217,6 +217,10 @@ class Context {
     return this.values.get(id)
   }
 
+  resetSource (id, source) {
+    this.sources.set(id, { source: source, position: [], raw: [] })
+  }
+
   employSource (id, source, position, raw) {
     let obj = this.lookupSource(id)
     if (!obj) {
