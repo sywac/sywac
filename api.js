@@ -261,7 +261,10 @@ class Api {
     if (dsl && typeof dsl === 'object') {
       opts = Object.assign({}, dsl, opts)
     } else if (typeof dsl === 'string') {
+      opts = Object.assign({}, opts)
       opts.flags = dsl
+    } else {
+      Object.assign({}, opts)
     }
     if (!opts.flags && opts.aliases) opts.flags = [].concat(opts.aliases)[0]
 
