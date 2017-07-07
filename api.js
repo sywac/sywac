@@ -76,7 +76,7 @@ class Api {
       'lineSep', 'sectionSep', 'pad', 'indent', 'split', 'icon', 'slogan',
       'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth',
       'examplePrefix', 'exampleOrder', 'usageCommandPlaceholder',
-      'usageArgsPlaceholder', 'usageOptionsPlaceholder'
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'showHelpOnError'
     ].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
@@ -235,7 +235,7 @@ class Api {
   }
 
   outputSettings (settings) {
-    ['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth', 'examplePrefix'].forEach(opt => {
+    ['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth', 'examplePrefix', 'showHelpOnError'].forEach(opt => {
       if (opt in settings) this.helpOpts[opt] = settings[opt]
     })
     return this

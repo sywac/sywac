@@ -38,6 +38,7 @@ class Buffer {
     // epilogue
     this._epilogue = opts.epilogue || ''
     // cli/validation/error messages
+    this._showHelpOnError = 'showHelpOnError' in opts ? opts.showHelpOnError : true
     this._messages = opts.messages || []
     // dependencies
     this._utils = opts.utils
@@ -120,7 +121,7 @@ class Buffer {
   }
 
   get messages () {
-    return this._messages
+    return this._messages || []
   }
 
   set messages (m) {
@@ -133,7 +134,7 @@ class Buffer {
 
   toString (opts) {
     opts = opts || {}
-    let str = this.helpContent(opts)
+    let str = (this._showHelpOnError || !this.messages.length) ? this.helpContent(opts) : ''
     str = this.appendSection(str, this.errorContent(opts), this.sectionSep)
     return str
   }
