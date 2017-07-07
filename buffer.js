@@ -40,6 +40,21 @@ class Buffer {
     // cli/validation/error messages
     this._showHelpOnError = 'showHelpOnError' in opts ? opts.showHelpOnError : true
     this._messages = opts.messages || []
+    // style hooks
+    this._styleUsagePrefix = opts.styleUsagePrefix
+    this._styleUsagePositionals = opts.styleUsagePositionals
+    this._styleUsageCommandPlaceholder = opts.styleUsageCommandPlaceholder
+    this._styleUsageArgsPlaceholder = opts.styleUsageArgsPlaceholder
+    this._styleUsageOptionsPlaceholder = opts.styleUsageOptionsPlaceholder
+    this._styleGroup = opts.styleGroup
+    this._styleGroupError = opts.styleGroupError
+    this._styleFlags = opts.styleFlags
+    this._styleFlagsError = opts.styleFlagsError
+    this._styleDesc = opts.styleDesc
+    this._styleDescError = opts.styleDescError
+    this._styleHints = opts.styleHints
+    this._styleHintsError = opts.styleHintsError
+    this._styleMessages = opts.styleMessages
     // dependencies
     this._utils = opts.utils
   }
@@ -83,20 +98,29 @@ class Buffer {
   }
 
   get usage () {
-    let usage = this._usage || this.buildUsage()
+    let usage
+    if (typeof this._usage === 'function') usage = this._usage(this._usageName)
+    else if (this._usage) usage = this._usage
+    else usage = this.buildUsage()
     return this._usageName ? usage.replace('$0', this._usageName) : usage
   }
 
   buildUsage () {
     // _usagePrefix + (_usagePositionals.join(' ') || _usageHasCommand + _usageHasArgs) + _usageHasOptions
-    let usage = this._usagePrefix
+    let usage = this.styleUsagePrefix(typeof this._usagePrefix === 'function' ? this._usagePrefix(this._usageName) : this._usagePrefix)
     if (this._usagePositionals.length) {
-      usage += ' ' + this._usagePositionals.join(' ')
+      usage += ' ' + this.styleUsagePositionals(this._usagePositionals.join(' '))
     } else {
-      if (this._usageHasCommand && this._usageCommandPlaceholder) usage += ' ' + this._usageCommandPlaceholder
-      if (this._usageHasArgs && this._usageArgsPlaceholder) usage += ' ' + this._usageArgsPlaceholder
+      if (this._usageHasCommand && this._usageCommandPlaceholder) {
+        usage += ' ' + this.styleUsageCommandPlaceholder(typeof this._usageCommandPlaceholder === 'function' ? this._usageCommandPlaceholder(this._usageName) : this._usageCommandPlaceholder)
+      }
+      if (this._usageHasArgs && this._usageArgsPlaceholder) {
+        usage += ' ' + this.styleUsageArgsPlaceholder(typeof this._usageArgsPlaceholder === 'function' ? this._usageArgsPlaceholder(this._usageName) : this._usageArgsPlaceholder)
+      }
     }
-    if (this._usageHasOptions && this._usageOptionsPlaceholder) usage += ' ' + this._usageOptionsPlaceholder
+    if (this._usageHasOptions && this._usageOptionsPlaceholder) {
+      usage += ' ' + this.styleUsageOptionsPlaceholder(typeof this._usageOptionsPlaceholder === 'function' ? this._usageOptionsPlaceholder(this._usageName) : this._usageOptionsPlaceholder)
+    }
     return usage
   }
 
@@ -130,6 +154,62 @@ class Buffer {
 
   get epilogue () {
     return this._epilogue
+  }
+
+  get styleUsagePrefix () {
+    return typeof this._styleUsagePrefix === 'function' ? this._styleUsagePrefix : s => s
+  }
+
+  get styleUsagePositionals () {
+    return typeof this._styleUsagePositionals === 'function' ? this._styleUsagePositionals : s => s
+  }
+
+  get styleUsageCommandPlaceholder () {
+    return typeof this._styleUsageCommandPlaceholder === 'function' ? this._styleUsageCommandPlaceholder : s => s
+  }
+
+  get styleUsageArgsPlaceholder () {
+    return typeof this._styleUsageArgsPlaceholder === 'function' ? this._styleUsageArgsPlaceholder : s => s
+  }
+
+  get styleUsageOptionsPlaceholder () {
+    return typeof this._styleUsageOptionsPlaceholder === 'function' ? this._styleUsageOptionsPlaceholder : s => s
+  }
+
+  get styleGroup () {
+    return typeof this._styleGroup === 'function' ? this._styleGroup : s => s
+  }
+
+  get styleGroupError () {
+    return typeof this._styleGroupError === 'function' ? this._styleGroupError : this.styleGroup
+  }
+
+  get styleFlags () {
+    return typeof this._styleFlags === 'function' ? this._styleFlags : s => s
+  }
+
+  get styleFlagsError () {
+    return typeof this._styleFlagsError === 'function' ? this._styleFlagsError : this.styleFlags
+  }
+
+  get styleDesc () {
+    return typeof this._styleDesc === 'function' ? this._styleDesc : s => s
+  }
+
+  get styleDescError () {
+    return typeof this._styleDescError === 'function' ? this._styleDescError : this.styleDesc
+  }
+
+  get styleHints () {
+    return typeof this._styleHints === 'function' ? this._styleHints : s => s
+  }
+
+  get styleHintsError () {
+    return typeof this._styleHintsError === 'function' ? this._styleHintsError : this.styleHints
+  }
+
+  get styleMessages () {
+    return typeof this._styleMessages === 'function' ? this._styleMessages : s => s
   }
 
   toString (opts) {
@@ -188,15 +268,27 @@ class Buffer {
     return str
   }
 
-  appendGroup (str, heading, types) {
+  appendGroup (str, heading, typeObjects) {
     // first determine width needed for all flags
     let flagsWidth = 0
+    let anyInvalid = false
+    const types = typeObjects.map(type => {
+      if (type.invalid) anyInvalid = true
+      return Object.assign({}, type, {
+        helpFlags: type.invalid ? this.styleFlagsError(type.helpFlags, type) : this.styleFlags(type.helpFlags, type),
+        helpDesc: type.invalid ? this.styleDescError(type.helpDesc, type) : this.styleDesc(type.helpDesc, type),
+        helpHints: type.invalid ? this.styleHintsError(type.helpHints, type) : this.styleHints(type.helpHints, type)
+      })
+    })
     types.forEach(type => {
       if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
     })
     let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
 
-    if (heading) str = this.appendSection(str, heading, this.sectionSep)
+    if (heading) {
+      const styledHeading = anyInvalid ? this.styleGroupError(heading) : this.styleGroup(heading)
+      str = this.appendSection(str, styledHeading, this.sectionSep)
+    }
 
     // if any types in this group require multi line, then just do all of them multi line
     let multiline = types.some(type => this.determineLines(type, flagsWidth, maxWidth) > 1)
@@ -235,7 +327,7 @@ class Buffer {
   }
 
   errorContent () {
-    return this.messages.join(this.lineSep)
+    return this.messages.map(s => this.styleMessages(s)).join(this.lineSep)
   }
 
   determineLines (type, flagsWidth, maxWidth) {

@@ -131,6 +131,18 @@ class Context {
     this.messages.push(format.apply(null, arguments))
   }
 
+  markTypeInvalid (id) {
+    let mappedLevels = Object.keys(this.types)
+    for (let i = mappedLevels.length - 1, currentLevel, found; i >= 0; i--) {
+      currentLevel = mappedLevels[i]
+      found = (this.types[currentLevel] || []).find(type => type.id === id)
+      if (found) {
+        found.invalid = true
+        return
+      }
+    }
+  }
+
   explicitCommandMatch (level) {
     if (!this.argv._ || !this.argv._.length) return false
     const candidate = this.argv._[0]
@@ -156,12 +168,13 @@ class Context {
   addDeferredHelp (helpBuffer) {
     let groups = {}
     let mappedLevels = Object.keys(this.types)
-    let mappedLevelsLength = mappedLevels.length
-    let currentLevel
-    for (let i = mappedLevelsLength - 1; i >= 0; i--) {
+    for (let i = mappedLevels.length - 1, currentLevel; i >= 0; i--) {
       currentLevel = mappedLevels[i]
       ;(this.types[currentLevel] || []).forEach(type => {
-        if (currentLevel === helpBuffer._usageName || type.datatype !== 'command') groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
+        if (currentLevel === helpBuffer._usageName || type.datatype !== 'command') {
+          if (this.helpRequested) type.invalid = false
+          groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
+        }
       })
     }
     helpBuffer.groups = groups

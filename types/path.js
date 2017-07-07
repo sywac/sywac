@@ -92,7 +92,7 @@ class TypePath extends TypeString {
       'ENOENT_true': 'The %s does not exist: %s'
     }
     let msg = msgMap[err.code + '_' + this._mustExist]
-    if (msg) context.cliMessage(msg, this.fulltype, value)
+    if (msg) this.failValidation(context, msg, this.fulltype, value)
   }
 
   handleStats (stats, context, value) {
@@ -105,7 +105,7 @@ class TypePath extends TypeString {
     } else if (wantedType !== 'path' && actualType !== wantedType) {
       msg = 'The path is a %s: %s'
     }
-    if (msg) context.cliMessage(msg, actualType, value)
+    if (msg) this.failValidation(context, msg, actualType, value)
   }
 
   getValue (context) {

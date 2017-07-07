@@ -76,7 +76,11 @@ class Api {
       'lineSep', 'sectionSep', 'pad', 'indent', 'split', 'icon', 'slogan',
       'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth',
       'examplePrefix', 'exampleOrder', 'usageCommandPlaceholder',
-      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'showHelpOnError'
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'showHelpOnError',
+      'styleGroup', 'styleGroupError', 'styleFlags', 'styleFlagsError',
+      'styleDesc', 'styleDescError', 'styleHints', 'styleHintsError', 'styleMessages',
+      'styleUsagePrefix', 'styleUsagePositionals', 'styleUsageCommandPlaceholder',
+      'styleUsageArgsPlaceholder', 'styleUsageOptionsPlaceholder'
     ].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
@@ -191,7 +195,7 @@ class Api {
 
   usage (usage) {
     if (typeof usage === 'string') this.helpOpts.usage = usage
-    else {
+    else if (usage) {
       const keyMap = {
         usage: 'usage',
         prefix: 'usagePrefix',
@@ -235,8 +239,24 @@ class Api {
   }
 
   outputSettings (settings) {
-    ['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth', 'examplePrefix', 'showHelpOnError'].forEach(opt => {
+    if (!settings) return this
+    ;['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth', 'examplePrefix', 'showHelpOnError'].forEach(opt => {
       if (opt in settings) this.helpOpts[opt] = settings[opt]
+    })
+    return this
+  }
+
+  style (hooks) {
+    if (!hooks) return this
+    ;[
+      'group', 'groupError', 'flags', 'flagsError', 'desc', 'descError', 'hints',
+      'hintsError', 'messages', 'usagePrefix', 'usagePositionals', 'usageCommandPlaceholder',
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder'
+    ].forEach(key => {
+      if (typeof hooks[key] === 'function') {
+        const helpOptsKey = 'style' + key[0].toUpperCase() + key.slice(1)
+        this.helpOpts[helpOptsKey] = hooks[key]
+      }
     })
     return this
   }

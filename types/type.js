@@ -266,7 +266,7 @@ class Type {
       if (this.isRequired && context.lookupSourceValue(this.id) === Type.SOURCE_DEFAULT) {
         const msgAndArgs = { msg: '', args: [] }
         this.buildRequiredMessage(context, msgAndArgs)
-        if (msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
+        if (msgAndArgs.msg) this.failValidation(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
       }
       resolve()
     }))
@@ -277,7 +277,7 @@ class Type {
           if (!isValid) {
             const msgAndArgs = { msg: '', args: [] }
             this.buildInvalidMessage(context, msgAndArgs)
-            if (msgAndArgs.msg) context.cliMessage.apply(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
+            if (msgAndArgs.msg) this.failValidation(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
           }
           resolve()
         })
@@ -286,6 +286,23 @@ class Type {
     }))
 
     return Promise.all(promises).then(this.resolve)
+  }
+
+  failValidation (context, msg) {
+    let args
+    if (Array.isArray(msg)) {
+      args = msg
+    } else {
+      // DO NOT PASS OR LEAK arguments!
+      // see https://github.com/petkaantonov/bluebird/wiki/Optimization-killers#3-managing-arguments
+      const argsLen = arguments.length
+      args = new Array(argsLen - 1)
+      for (let i = 1; i < argsLen; ++i) {
+        args[i - 1] = arguments[i]
+      }
+    }
+    context.cliMessage.apply(context, args)
+    context.markTypeInvalid(this.id)
   }
 
   buildRequiredMessage (context, msgAndArgs) {
@@ -340,6 +357,7 @@ class Type {
   toObject () {
     return {
       // populated via config
+      id: this.id,
       aliases: this.aliases,
       datatype: this.datatype,
       // defaultVal: this.defaultVal,
