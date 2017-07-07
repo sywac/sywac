@@ -2,6 +2,8 @@
 
 > So you want a CLI...
 
+[![Build Status](https://travis-ci.org/sywac/sywac.svg?branch=master)](https://travis-ci.org/sywac/sywac)
+
 A better CLI framework, made for the ES2015 era.
 
 ---
@@ -21,6 +23,7 @@ A better CLI framework, made for the ES2015 era.
 - Plug in your own types or override/extend the built-in ones
 - Coherent API
 - Parse strings as easily as `process.argv`
+- Supports concurrent parsing, safe for chatbots or other server-side apps
 
 ## Installation
 
