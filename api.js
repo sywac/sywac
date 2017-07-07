@@ -37,6 +37,7 @@ class Api {
       commandType: this.getCommand
     }
     this._showHelpByDefault = 'showHelpByDefault' in opts ? opts.showHelpByDefault : false
+    this._magicCommandAdded = false
     this.configure(opts)
     if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
   }
@@ -294,7 +295,7 @@ class Api {
       if (dsl.params) opts = Object.assign({}, dsl)
       else opts.params = Object.assign({}, dsl)
     } else if (typeof dsl === 'string') {
-      this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(dsl) // TODO DO NOT ADD MORE THAN ONCE ACROSS MULTIPLE RUNS
+      this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(dsl)
       addedToHelp = true
       let array = this.utils.stringToMultiPositional(dsl)
       if (!opts.params) {
@@ -549,7 +550,8 @@ class Api {
         if (type.isDefault) hasDefaultCommand = true
       }
     })
-    if (this._showHelpByDefault && hasCommands && !hasDefaultCommand) {
+    if (!this._magicCommandAdded && this._showHelpByDefault && hasCommands && !hasDefaultCommand) {
+      this._magicCommandAdded = true
       this._internalCommand(Api.DEFAULT_COMMAND_INDICATOR, (argv, context) => {
         context.deferHelp().addDeferredHelp(this.initHelpBuffer())
       }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR) }, false)
@@ -568,7 +570,7 @@ class Api {
       // first add unknownType to context.argv (because it's needed to determine shouldCoerceAndCheck)
       if (this.unknownType) context.populateArgv([this.unknownType.toResult(context, true)])
       // next determine shouldCoerceAndCheck
-      const shouldCoerceAndCheck = this.shouldCoerceAndCheck(context, hasCommands, hasDefaultCommand)
+      const shouldCoerceAndCheck = this.shouldCoerceAndCheck(context)
       // then populate argv with other types, letting them know if it makes sense to apply coercion
       context.populateArgv(this.types.map(type => type.toResult(context, shouldCoerceAndCheck)))
 
@@ -608,11 +610,11 @@ class Api {
   // clear as mud? this predicts the future, essentially the inverse of conditions found in parse after
   // parseFromContext and also the conditions that would make the showHelpByDefault command run
   // basically, we don't want to run the custom check handler if help text or version will be output
-  shouldCoerceAndCheck (context, hasCommands, hasDefaultCommand) {
+  shouldCoerceAndCheck (context) {
     return !context.helpRequested &&
       !context.versionRequested &&
       !(context.messages && context.messages.length) &&
-      !(this._showHelpByDefault && hasCommands && !hasDefaultCommand && !context.explicitCommandMatch(this.name))
+      (!this._magicCommandAdded || context.explicitCommandMatch(this.name))
   }
 
   // optional convenience methods

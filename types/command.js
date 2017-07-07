@@ -18,7 +18,10 @@ class TypeCommand extends Type {
     if (typeof override === 'undefined') override = true
     super.configure(opts, override)
 
-    if (override || !this._api) this._api = opts.api || this._api
+    if (override || !this._api) {
+      this._api = opts.api || this._api
+      if (opts.api) this._apiConfigured = false
+    }
     if (override || !this._positionalOpts) this._positionalOpts = this._assignPositionalOpts(this._positionalOpts || {}, opts)
     if (override || !this._positionalDsl) this._positionalDsl = opts.paramsDsl || this._positionalDsl
     if (override || typeof this._setupHandler !== 'function') this._setupHandler = opts.setup || this._setupHandler
@@ -98,17 +101,20 @@ class TypeCommand extends Type {
     this.setValue(context, true) // set this value to true for context.details
     context.populateArgv([this.toResult(context)]) // apply value to context.details
 
-    // add positionals from preconfigured opts
-    if (typeof this._positionalDsl === 'string' && this._positionalDsl.length) {
-      this.api.positional(this._positionalDsl, this._positionalOpts)
-    } else if (this._positionalOpts && this._positionalOpts.params) {
-      this.api.positional(this._positionalOpts)
+    if (!this._apiConfigured) {
+      this._apiConfigured = true
+      // add positionals from preconfigured opts
+      if (typeof this._positionalDsl === 'string' && this._positionalDsl.length) {
+        this.api.positional(this._positionalDsl, this._positionalOpts)
+      } else if (this._positionalOpts && this._positionalOpts.params) {
+        this.api.positional(this._positionalOpts)
+      }
+
+      // TODO add other types from preconfigured opts ?
+
+      // call sync "setup" handler, if defined
+      this.setupHandler(this.api)
     }
-
-    // TODO add other types from preconfigured opts ?
-
-    // call sync "setup" handler, if defined
-    this.setupHandler(this.api)
 
     return this.api.parseFromContext(context).then(whenDone => {
       // only run innermost command handler
