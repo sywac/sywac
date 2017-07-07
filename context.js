@@ -156,7 +156,8 @@ class Context {
     const candidate = this.argv._[0]
     return {
       explicit: matchFound && aliases.some(alias => alias === candidate),
-      implicit: !matchFound && isDefault && !this.helpRequested
+      implicit: !matchFound && isDefault && !this.helpRequested,
+      candidate: candidate
     }
   }
 

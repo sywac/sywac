@@ -92,7 +92,9 @@ class TypeCommand extends Type {
 
     if (match.explicit) {
       // "claim" the arg from context.slurped so logic in unknownType works
-      let matchedArg = context.slurped.find(arg => arg.parsed.length === 1 && !arg.parsed[0].key && !arg.parsed[0].claimed)
+      let matchedArg = context.slurped.find(arg => {
+        return arg.parsed.length === 1 && !arg.parsed[0].key && !arg.parsed[0].claimed && arg.raw === match.candidate
+      })
       if (matchedArg) {
         matchedArg.parsed[0].claimed = true
         this.applySource(context, Type.SOURCE_POSITIONAL, matchedArg.index, matchedArg.raw)
