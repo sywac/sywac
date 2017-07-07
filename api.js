@@ -75,7 +75,8 @@ class Api {
     [
       'lineSep', 'sectionSep', 'pad', 'indent', 'split', 'icon', 'slogan',
       'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth',
-      'examplePrefix', 'exampleOrder'
+      'examplePrefix', 'exampleOrder', 'usageCommandPlaceholder',
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder'
     ].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
