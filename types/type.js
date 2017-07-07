@@ -361,7 +361,7 @@ class Type {
       aliases: this.aliases,
       datatype: this.datatype,
       // defaultVal: this.defaultVal,
-      // isRequired: this.isRequired,
+      isRequired: this.isRequired,
       helpFlags: this.helpFlags,
       helpDesc: this.helpDesc,
       helpHints: this.helpHints,
