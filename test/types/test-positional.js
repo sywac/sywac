@@ -95,9 +95,9 @@ tap.test('positional > dsl for aliases', t => {
 })
 
 tap.test('positional > dsl for flags', t => {
-  const promises = []
+  const funcs = []
 
-  promises.push(() => {
+  funcs.push(() => {
     const api = Api.get().positional('[--name] <name> [url]')
     return api.parse('nom earl').then(result => {
       assertNoErrors(t, result)
@@ -118,7 +118,7 @@ tap.test('positional > dsl for flags', t => {
     })
   })
 
-  promises.push(() => {
+  funcs.push(() => {
     const api = Api.get().positional('[-n|-e] <name|email> [-u] [url]')
     return api.parse('nom earl').then(result => {
       assertNoErrors(t, result)
@@ -157,7 +157,7 @@ tap.test('positional > dsl for flags', t => {
     })
   })
 
-  return Promise.all(promises)
+  return Promise.all(funcs.map(p => p()))
 })
 
 tap.test('positional > dsl for type', t => {
@@ -373,4 +373,13 @@ tap.test('positional > ignore', t => {
       t.equal(Object.keys(opts).length, 1)
       t.equal(opts.ignore, '[options]')
     })
+})
+
+tap.test('positional > coerce', t => {
+  return Api.get().positional('<one>', {
+    params: [{ coerce: val => val && val.split('..') }]
+  }).parse('x..y').then(result => {
+    assertNoErrors(t, result)
+    t.same(result.argv.one, ['x', 'y'])
+  })
 })
