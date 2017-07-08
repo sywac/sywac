@@ -1,0 +1,7 @@
+{
+  "name": "ndb",
+  "version": "2.3.4",
+  "private": true,
+  "description": "Test fixture",
+  "bin": "ndb.js"
+}
