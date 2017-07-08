@@ -20,6 +20,10 @@ class TypeString extends Type {
   setValue (context, value) {
     context.assignValue(this.id, typeof value === 'boolean' ? '' : value)
   }
+
+  hasRequiredValue (context) {
+    return super.hasRequiredValue(context) && this.getValue(context)
+  }
 }
 
 module.exports = TypeString

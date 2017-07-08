@@ -263,7 +263,7 @@ class Type {
     let promises = []
 
     promises.push(new Promise(resolve => {
-      if (this.isRequired && context.lookupSourceValue(this.id) === Type.SOURCE_DEFAULT) {
+      if (this.isRequired && !this.hasRequiredValue(context)) {
         const msgAndArgs = { msg: '', args: [] }
         this.buildRequiredMessage(context, msgAndArgs)
         if (msgAndArgs.msg) this.failValidation(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
@@ -303,6 +303,10 @@ class Type {
     }
     context.cliMessage.apply(context, args)
     context.markTypeInvalid(this.id)
+  }
+
+  hasRequiredValue (context) {
+    return context.lookupSourceValue(this.id) !== Type.SOURCE_DEFAULT
   }
 
   buildRequiredMessage (context, msgAndArgs) {

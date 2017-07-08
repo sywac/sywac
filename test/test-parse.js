@@ -170,6 +170,19 @@ tap.test('parse > strict types', t => {
     })
 })
 
+tap.test('parse > a required string should not allow empty value', t => {
+  const api = Api.get().string('-s <string>', { required: true })
+  return api.parse('-s').then(result => {
+    t.equal(result.code, 1)
+    t.match(result.output, /Missing required argument: s/)
+    t.equal(result.errors.length, 0)
+    return api.parse('-s val')
+  }).then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.s, 'val')
+  })
+})
+
 tap.test('parse > coerced types', t => {
   const promises = []
 
