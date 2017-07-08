@@ -9,6 +9,8 @@ const helper = Helper.get(parent)
 const assertNoErrors = helper.assertNoErrors.bind(helper)
 const assertTypeDetails = helper.assertTypeDetails.bind(helper)
 
+tap.test('command > custom check handling at different levels')
+
 tap.test('command > dsl string and run handler', t => {
   let runCalled = 0
   let innerArgv
@@ -90,6 +92,46 @@ tap.test('command > opts object (aka command module) with flags', t => {
     }
   }
   const api = Api.get().command(module)
+  // assert that the call to command() didn't modify the objects given
+  t.equal(Object.keys(module).length, 3)
+  t.equal(module.flags, 'do <it>')
+  t.equal(typeof module.setup, 'function')
+  t.equal(typeof module.run, 'function')
+  return api.parse('do').then(result => {
+    t.equal(setupCalled, 1)
+    t.equal(runCalled, 0)
+    t.equal(innerArgv, undefined)
+    t.equal(result.code, 1)
+    t.match(result.output, /Missing required argument: it/)
+    t.equal(result.errors.length, 0)
+    return api.parse('do something')
+  }).then(result => {
+    assertNoErrors(t, result)
+    t.equal(setupCalled, 1)
+    t.equal(runCalled, 1)
+    t.equal(innerArgv.it, 'something')
+    t.same(innerArgv._, [])
+    t.equal(result.argv.it, 'something')
+    t.same(result.argv._, [])
+    assertTypeDetails(t, result, 0, ['_'], 'array:string', [], 'default', [], [])
+    assertTypeDetails(t, result, 1, ['do'], 'command', true, 'positional', [0], ['do'])
+    Helper.get(`${parent} do`).assertTypeDetails(t, result, 2, ['it'], 'string', 'something', 'positional', [1], ['something'])
+  })
+})
+
+tap.test('command > opts object (aka command module) with flags as 2nd argument', t => {
+  let setupCalled = 0
+  let runCalled = 0
+  let innerArgv
+  const module = {
+    flags: 'do <it>',
+    setup: api => ++setupCalled,
+    run: argv => {
+      runCalled++
+      innerArgv = argv
+    }
+  }
+  const api = Api.get().command(() => {}, module)
   // assert that the call to command() didn't modify the objects given
   t.equal(Object.keys(module).length, 3)
   t.equal(module.flags, 'do <it>')

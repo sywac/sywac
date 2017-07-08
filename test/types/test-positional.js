@@ -269,7 +269,7 @@ tap.test('positional > dsl for default value', t => {
   })
 })
 
-tap.test('positional > params as array', t => {
+tap.test('positional > params as array 1/2', t => {
   const params = [
     { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
     { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
@@ -280,9 +280,11 @@ tap.test('positional > params as array', t => {
   t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
   t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
   t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][0].helpFlags, '<one>')
   t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
   t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
   t.equal(typeObjects[parent][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][1].helpFlags, '[two]')
   // assert that the call to positional() didn't modify the objects given
   t.equal(params.length, 2)
   t.equal(Object.keys(params[0]).length, 3)
@@ -296,7 +298,36 @@ tap.test('positional > params as array', t => {
   t.end()
 })
 
-tap.test('positional > params as object', t => {
+tap.test('positional > params as array 2/2', t => {
+  const params = [
+    { flags: '<one>', desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+    { flags: '[two]', desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+  ]
+  const typeObjects = Api.get().positional(params).initContext(true).types
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
+  t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][0].helpFlags, '<one>')
+  t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects[parent][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][1].helpFlags, '[two]')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(params.length, 2)
+  t.equal(Object.keys(params[0]).length, 4)
+  t.equal(params[0].desc, 'The description for the required first arg')
+  t.equal(params[0].group, 'First argument:')
+  t.equal(params[0].hints, '[first]')
+  t.equal(params[0].flags, '<one>')
+  t.equal(Object.keys(params[1]).length, 4)
+  t.equal(params[1].desc, 'The description for the optional second arg')
+  t.equal(params[1].group, 'Second argument:')
+  t.equal(params[1].hints, '[second]')
+  t.equal(params[1].flags, '[two]')
+  t.end()
+})
+
+tap.test('positional > params as object 1/3', t => {
   const params = {
     one: { desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
     two: { desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
@@ -307,9 +338,11 @@ tap.test('positional > params as object', t => {
   t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
   t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
   t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][0].helpFlags, '<one>')
   t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
   t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
   t.equal(typeObjects[parent][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][1].helpFlags, '[two]')
   // assert that the call to positional() didn't modify the objects given
   t.equal(Object.keys(params).length, 2)
   t.equal(Object.keys(params['one']).length, 3)
@@ -320,6 +353,66 @@ tap.test('positional > params as object', t => {
   t.equal(params['two'].desc, 'The description for the optional second arg')
   t.equal(params['two'].group, 'Second argument:')
   t.equal(params['two'].hints, '[second]')
+  t.end()
+})
+
+tap.test('positional > params as object 2/3', t => {
+  const params = {
+    one: { flags: '<one>', desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+    two: { flags: '[two]', desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+  }
+  const typeObjects = Api.get().positional({
+    params: params
+  }).initContext(true).types
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
+  t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][0].helpFlags, '<one>')
+  t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects[parent][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][1].helpFlags, '[two]')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(Object.keys(params).length, 2)
+  t.equal(Object.keys(params['one']).length, 4)
+  t.equal(params['one'].desc, 'The description for the required first arg')
+  t.equal(params['one'].group, 'First argument:')
+  t.equal(params['one'].hints, '[first]')
+  t.equal(params['one'].flags, '<one>')
+  t.equal(Object.keys(params['two']).length, 4)
+  t.equal(params['two'].desc, 'The description for the optional second arg')
+  t.equal(params['two'].group, 'Second argument:')
+  t.equal(params['two'].hints, '[second]')
+  t.equal(params['two'].flags, '[two]')
+  t.end()
+})
+
+tap.test('positional > params as object 3/3', t => {
+  const params = {
+    one: { flags: '<one>', desc: 'The description for the required first arg', group: 'First argument:', hints: '[first]' },
+    two: { flags: '[two]', desc: 'The description for the optional second arg', group: 'Second argument:', hints: '[second]' }
+  }
+  const typeObjects = Api.get().positional(params).initContext(true).types
+  t.equal(typeObjects[parent][0].helpDesc, 'The description for the required first arg')
+  t.equal(typeObjects[parent][0].helpGroup, 'First argument:')
+  t.equal(typeObjects[parent][0].helpHints, '[first]')
+  t.equal(typeObjects[parent][0].helpFlags, '<one>')
+  t.equal(typeObjects[parent][1].helpDesc, 'The description for the optional second arg')
+  t.equal(typeObjects[parent][1].helpGroup, 'Second argument:')
+  t.equal(typeObjects[parent][1].helpHints, '[second]')
+  t.equal(typeObjects[parent][1].helpFlags, '[two]')
+  // assert that the call to positional() didn't modify the objects given
+  t.equal(Object.keys(params).length, 2)
+  t.equal(Object.keys(params['one']).length, 4)
+  t.equal(params['one'].desc, 'The description for the required first arg')
+  t.equal(params['one'].group, 'First argument:')
+  t.equal(params['one'].hints, '[first]')
+  t.equal(params['one'].flags, '<one>')
+  t.equal(Object.keys(params['two']).length, 4)
+  t.equal(params['two'].desc, 'The description for the optional second arg')
+  t.equal(params['two'].group, 'Second argument:')
+  t.equal(params['two'].hints, '[second]')
+  t.equal(params['two'].flags, '[two]')
   t.end()
 })
 

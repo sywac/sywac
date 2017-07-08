@@ -27,7 +27,7 @@ class TypeEnum extends TypeString {
   }
 
   choice (c) {
-    if (c) this._choices = this._choices.concat(c)
+    if (c) this._choices = (this._choices || []).concat(c)
     return this
   }
 

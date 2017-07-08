@@ -285,7 +285,7 @@ class Api {
       opts = Object.assign({}, opts)
       opts.flags = dsl
     } else {
-      Object.assign({}, opts)
+      opts = Object.assign({}, opts)
     }
     if (!opts.flags && opts.aliases) opts.flags = [].concat(opts.aliases)[0]
 

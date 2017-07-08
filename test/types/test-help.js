@@ -2,6 +2,7 @@
 
 const tap = require('tap')
 const Api = require('../../api')
+const TypeHelp = require('../../types/help')
 
 const parent = require('path').basename(__filename, '.js')
 const helper = require('../helper').get(parent)
@@ -33,7 +34,7 @@ tap.test('help > defaults', t => {
 })
 
 tap.test('help > custom flags, desc, group, hints', t => {
-  const typeObjects = Api.get().help('-H, --get-help', {
+  let typeObjects = Api.get().help('-H, --get-help', {
     desc: 'Display the help text and exit',
     group: 'Global Options:',
     hints: ''
@@ -45,6 +46,22 @@ tap.test('help > custom flags, desc, group, hints', t => {
   t.equal(typeObjects[parent][0].helpHints, '')
   t.equal(typeObjects[parent][0].helpGroup, 'Global Options:')
   t.equal(typeObjects[parent][0].isHidden, false)
+
+  typeObjects = Api.get().custom(
+    TypeHelp.get()
+      .description('Hi there')
+      .alias('H')
+      .hints('[try it]')
+      .group('Opts:')
+      .hidden(true)
+  ).initContext(true).types
+  t.same(typeObjects[parent][0].aliases, ['H'])
+  t.equal(typeObjects[parent][0].datatype, 'boolean')
+  t.equal(typeObjects[parent][0].helpFlags, '-H')
+  t.equal(typeObjects[parent][0].helpDesc, 'Hi there')
+  t.equal(typeObjects[parent][0].helpHints, '[try it]')
+  t.equal(typeObjects[parent][0].helpGroup, 'Opts:')
+  t.equal(typeObjects[parent][0].isHidden, true)
   t.end()
 })
 

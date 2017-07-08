@@ -2,6 +2,8 @@
 
 const tap = require('tap')
 const Api = require('../api')
+const TypeEnum = require('../types/enum')
+const TypeNumber = require('../types/number')
 
 const parent = require('path').basename(__filename, '.js')
 const helper = require('./helper').get(parent)
@@ -149,18 +151,104 @@ tap.test('parse > multiple concurrent passes', t => {
   return Promise.all(promises)
 })
 
-tap.test('parse > required types')
-tap.test('parse > strict types')
-tap.test('parse > coerced types')
-// every type can test:
-// - aliases without flags
-// - flags without aliases
-// - no flags or aliases ??
-// - defaultValue
-// - required
-// - strict
-// - coerce
-// - description || desc
-// - hints
-// - group
-// - hidden
+tap.test('parse > strict types', t => {
+  return Api.get()
+    // enums are strict by default, their default value is assumed valid
+    .custom(
+      TypeEnum.get().flags('-e').choice(['one', 'two']).choice('three').defaultValue('none')
+    )
+    // strict numbers don't allow NaN
+    .custom(TypeNumber.get().alias(['n', 'num']).strict(true).required(true))
+    // strings don't have a strict mode
+    .string('-s', { strict: true })
+    .parse('-n x -s').then(result => {
+      t.equal(result.code, 1)
+      t.match(result.output, /Value "NaN" is invalid for argument n or num\. Please specify a number\./)
+      t.equal(result.errors.length, 0)
+      t.equal(result.argv.e, 'none')
+      t.equal(result.argv.s, '')
+    })
+})
+
+tap.test('parse > coerced types', t => {
+  const promises = []
+
+  const api = Api.get()
+    .boolean('-b', { coerce: val => val ? 'yay' : 'boo' })
+    .string('-s', { coerce: val => val && val.split('..') })
+    .custom(TypeNumber.get().flags('-n').coerce(val => val * 1000))
+    .boolean('-x', {
+      coerce: val => {
+        if (val) throw new Error('Blow up')
+        return val
+      }
+    })
+
+  promises.push(api.parse('-b -s 1..2 -n 5').then(result => {
+    assertNoErrors(t, result)
+    t.equal(result.argv.b, 'yay')
+    t.same(result.argv.s, ['1', '2'])
+    t.equal(result.argv.n, 5000)
+  }))
+
+  promises.push(api.parse('-x').then(result => {
+    t.equal(result.code, 1)
+    t.match(result.output, /Blow up/)
+    t.equal(result.errors.length, 1)
+  }))
+
+  return Promise.all(promises)
+})
+
+tap.test('parse > custom async check', t => {
+  // cliMessage, reject, throw, success, not called on help
+  let called = 0
+
+  const api = Api.get().help().check((argv, context) => {
+    called++
+    argv.looksGood = false
+    if (argv.msg) {
+      return context.cliMessage(argv.msg)
+    } else if (argv.throw) {
+      throw new Error('Thrown by custom check')
+    } else if (argv.reject) {
+      return Promise.reject(new Error('Custom check rejected'))
+    }
+    return Promise.resolve().then(() => {
+      argv.looksGood = true
+    })
+  })
+
+  return api.parse('--help').then(result => {
+    t.equal(result.code, 0)
+    t.equal(result.errors.length, 0)
+    t.equal(called, 0)
+    t.equal(result.argv.looksGood, undefined)
+    return api.parse('--msg "Not allowed"')
+  }).then(result => {
+    t.equal(result.code, 1)
+    t.match(result.output, /Not allowed/)
+    t.equal(result.errors.length, 0)
+    t.equal(called, 1)
+    t.equal(result.argv.looksGood, false)
+    return api.parse('--throw')
+  }).then(result => {
+    t.equal(result.code, 1)
+    t.match(result.output, /Thrown by custom check/)
+    t.equal(result.errors.length, 1)
+    t.equal(called, 2)
+    t.equal(result.argv.looksGood, false)
+    return api.parse('--reject')
+  }).then(result => {
+    t.equal(result.code, 1)
+    t.match(result.output, /Custom check rejected/)
+    t.equal(result.errors.length, 1)
+    t.equal(called, 3)
+    t.equal(result.argv.looksGood, false)
+    return api.parse('')
+  }).then(result => {
+    assertNoErrors(t, result)
+    t.equal(called, 4)
+    t.equal(result.argv.looksGood, true)
+  })
+})
