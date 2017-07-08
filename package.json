@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "pretest": "standard",
-    "test": "FORCE_COLOR=1 tap --cov --jobs=4 test/test*.js test/lib/test*.js test/types/test*.js"
+    "test": "FORCE_COLOR=1 tap --cov --jobs=4 test/test*.js test/lib/test*.js test/types/test*.js",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "engines": {
     "node": ">=4"
@@ -34,6 +35,7 @@
   "homepage": "http://sywac.io",
   "devDependencies": {
     "chalk": "^2.0.1",
+    "coveralls": "^2.13.1",
     "del": "^3.0.0",
     "require-uncached": "^1.0.3",
     "standard": "^10.0.2",
