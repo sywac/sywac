@@ -1,5 +1,7 @@
 # ![sywac](logo.png)
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/sywac/sywac.svg)](https://greenkeeper.io/)
+
 > So you want a CLI...
 
 [![Build Status](https://travis-ci.org/sywac/sywac.svg?branch=master)](https://travis-ci.org/sywac/sywac)
