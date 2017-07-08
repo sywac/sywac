@@ -5,6 +5,7 @@
 [![Build Status](https://travis-ci.org/sywac/sywac.svg?branch=master)](https://travis-ci.org/sywac/sywac)
 [![Coverage Status](https://coveralls.io/repos/github/sywac/sywac/badge.svg?branch=master)](https://coveralls.io/github/sywac/sywac?branch=master)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![Greenkeeper badge](https://badges.greenkeeper.io/sywac/sywac.svg)](https://greenkeeper.io/)
 
 A better CLI framework, made for the ES2015 era.
 
