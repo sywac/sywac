@@ -18,7 +18,7 @@ class Api {
     this._factories = {
       // meta
       unknownType: this.getUnknownType,
-      context: this.getContext,
+      _context: this.getContext,
       helpBuffer: this.getHelpBuffer,
       // common types
       boolean: this.getBoolean,
@@ -613,7 +613,7 @@ class Api {
   }
 
   initContext (includeTypes) {
-    let context = this.get('context', { utils: this.utils })
+    let context = this.get('_context', { utils: this.utils })
     return includeTypes ? this.applyTypes(context) : context
   }
 
