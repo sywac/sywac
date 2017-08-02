@@ -2,6 +2,7 @@
 
 const tap = require('tap')
 const Api = require('../api')
+const Context = require('../context')
 const TypeEnum = require('../types/enum')
 const TypeNumber = require('../types/number')
 
@@ -28,6 +29,39 @@ tap.test('parse > no explicit types', t => {
 
     assertTypeDetails(t, result, 0, ['_'], 'array:string', ['there', 'to', 'see'], 'positional', [2, 6, 7], ['there', 'to', 'see'])
   })
+})
+
+tap.test('parse > dashes allowed as unknown args', t => {
+  class Counter extends Context {
+    constructor (opts) {
+      super(opts)
+      this.numParseableArgs = 0
+    }
+    parseSingleArg (arg) {
+      this.numParseableArgs++
+      return super.parseSingleArg(arg)
+    }
+  }
+  let counter
+  return Api.get()
+    .registerFactory('_context', opts => new Counter(opts))
+    .check((argv, context) => {
+      counter = context
+    })
+    .parse('- --- ---- -- -').then(result => {
+      assertNoErrors(t, result)
+
+      t.equal(counter.numParseableArgs, 3)
+
+      t.same(result.argv._, ['-', '---', '----', '--', '-'])
+      t.equal(Object.keys(result.argv).length, 1)
+
+      t.same(result.details.args, ['-', '---', '----', '--', '-'])
+
+      t.equal(result.details.types.length, 1)
+
+      assertTypeDetails(t, result, 0, ['_'], 'array:string', ['-', '---', '----', '--', '-'], 'positional', [0, 1, 2, 3, 4], ['-', '---', '----', '--', '-'])
+    })
 })
 
 tap.test('parse > basic types', t => {

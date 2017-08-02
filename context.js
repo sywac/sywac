@@ -97,6 +97,13 @@ class Context {
     let kvDelimIndex = arg.indexOf('=')
     let flags = kvDelimIndex > 1 ? arg.substring(numBeginningDashes, kvDelimIndex) : arg.slice(numBeginningDashes)
     let value = kvDelimIndex > 1 ? arg.substring(kvDelimIndex + 1) : undefined
+    // allow an arg of just dashes e.g. '-'
+    if (!flags && !value) {
+      return [{
+        key: '',
+        value: arg
+      }]
+    }
     // can only be one flag with more than 1 dash
     if (numBeginningDashes > 1) {
       return [{
