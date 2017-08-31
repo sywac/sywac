@@ -55,6 +55,8 @@ class Buffer {
     this._styleHints = opts.styleHints
     this._styleHintsError = opts.styleHintsError
     this._styleMessages = opts.styleMessages
+    this._styleExample = opts.styleExample
+    this._styleAll = opts.styleAll
     // dependencies
     this._utils = opts.utils
   }
@@ -212,14 +214,15 @@ class Buffer {
     return typeof this._styleMessages === 'function' ? this._styleMessages : s => s
   }
 
-  toString (opts) {
-    opts = opts || {}
-    let str = (this._showHelpOnError || !this.messages.length) ? this.helpContent(opts) : ''
-    str = this.appendSection(str, this.errorContent(opts), this.sectionSep)
-    return str
+  get styleExample () {
+    return typeof this._styleExample === 'function' ? this._styleExample : this.styleFlags
   }
 
-  helpContent (opts) {
+  get styleAll () {
+    return typeof this._styleAll === 'function' ? this._styleAll : s => s
+  }
+
+  toString (opts) {
     opts = Object.assign({
       includePreface: true,
       includeUsage: true,
@@ -227,6 +230,13 @@ class Buffer {
       includeExamples: true,
       includeEpilogue: true
     }, opts)
+    let str = (this._showHelpOnError || !this.messages.length) ? this.helpContent(opts) : ''
+    str = this.appendSection(str, this.errorContent(opts), this.sectionSep)
+    return this.styleAll(str, opts)
+  }
+
+  helpContent (opts) {
+    opts = opts || {}
     let str = this.appendSection('', !!opts.includePreface && this.icon, this.sectionSep)
     if (opts.includePreface) str = this.appendSection(str, this.slogan, this.lineSep)
     if (opts.includeUsage) str = this.appendSection(str, this.usage, this.sectionSep)
@@ -305,7 +315,7 @@ class Buffer {
   }
 
   appendExampleGroup (str, heading, examples) {
-    if (heading) str = this.appendSection(str, heading, this.sectionSep)
+    if (heading) str = this.appendSection(str, this.styleGroup(heading), this.sectionSep)
 
     let flags
     let desc
@@ -319,8 +329,8 @@ class Buffer {
       if (flags && this._usageName) flags = flags.replace('$0', this._usageName)
 
       str = this.appendTypeMultiLine(str, {
-        helpDesc: desc,
-        helpHints: flags
+        helpDesc: this.styleDesc(desc, example),
+        helpHints: this.styleExample(flags, example)
       }, 0, this.maxWidth)
     })
     return str

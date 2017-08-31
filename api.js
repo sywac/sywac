@@ -80,7 +80,8 @@ class Api {
       'styleGroup', 'styleGroupError', 'styleFlags', 'styleFlagsError',
       'styleDesc', 'styleDescError', 'styleHints', 'styleHintsError', 'styleMessages',
       'styleUsagePrefix', 'styleUsagePositionals', 'styleUsageCommandPlaceholder',
-      'styleUsageArgsPlaceholder', 'styleUsageOptionsPlaceholder'
+      'styleUsageArgsPlaceholder', 'styleUsageOptionsPlaceholder', 'styleExample',
+      'styleAll'
     ].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
@@ -251,7 +252,7 @@ class Api {
     ;[
       'group', 'groupError', 'flags', 'flagsError', 'desc', 'descError', 'hints',
       'hintsError', 'messages', 'usagePrefix', 'usagePositionals', 'usageCommandPlaceholder',
-      'usageArgsPlaceholder', 'usageOptionsPlaceholder'
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'example', 'all'
     ].forEach(key => {
       if (typeof hooks[key] === 'function') {
         const helpOptsKey = 'style' + key[0].toUpperCase() + key.slice(1)
