@@ -11,6 +11,70 @@ tap.test('api > custom type can use needsApi')
 tap.test('api > custom type can use implicitCommands')
 
 tap.test('api > help text', t => {
+  let includeExamples = false
+  const helpText = Api.get()
+    .preface('icon', 'slogan')
+    .usage('usage')
+    .string('-s <string>', {
+      desc: 'My string description',
+      group: 'Strings:'
+    })
+    .boolean('-b', {
+      desc: 'My boolean description',
+      group: 'Booleans:'
+    })
+    .groupOrder(['Booleans:'])
+    .example('example 3', {
+      desc: 'A bad example',
+      group: 'Bad Examples:'
+    })
+    .example({
+      flags: 'example 1',
+      desc: 'A good example',
+      group: 'Good Examples:'
+    })
+    .example('example 2', { group: 'Good Examples:' })
+    .exampleOrder(['Good Examples:', 'Bad Examples:'])
+    .style({
+      group: s => s.toUpperCase(),
+      example: s => s + ' <kbd>enter</kbd>',
+      all: (s, opts) => {
+        includeExamples = opts.includeExamples
+        return s.replace(/O/g, '0')
+      }
+    })
+    .outputSettings({ maxWidth: 46 })
+    .epilogue('epilogue')
+    .getHelp()
+  t.equal(helpText, [
+    'icon',
+    'slogan',
+    '',
+    'usage',
+    '',
+    'B00LEANS:',
+    '  -b  My boolean description         [boolean]',
+    '',
+    'STRINGS:',
+    '  -s <string>  My string description  [string]',
+    '',
+    'G00D EXAMPLES:',
+    '  A good example',
+    '  $ example 1 <kbd>enter</kbd>',
+    '  $ example 2 <kbd>enter</kbd>',
+    '',
+    'BAD EXAMPLES:',
+    '  A bad example',
+    '  $ example 3 <kbd>enter</kbd>',
+    '',
+    'epilogue'
+  ].join('\n'))
+  t.same(includeExamples, true)
+
+  t.end()
+})
+
+tap.test('api > custom helpBuffer', t => {
   const helpText = Api.get()
     .preface('icon', 'slogan')
     .usage('usage')
@@ -36,31 +100,9 @@ tap.test('api > help text', t => {
     .exampleOrder(['Good Examples:', 'Bad Examples:'])
     .outputSettings({ maxWidth: 46 })
     .epilogue('epilogue')
+    .registerFactory('helpBuffer', () => ({ toString: () => 'Complete override' }))
     .getHelp()
-  t.equal(helpText, [
-    'icon',
-    'slogan',
-    '',
-    'usage',
-    '',
-    'Booleans:',
-    '  -b  My boolean description         [boolean]',
-    '',
-    'Strings:',
-    '  -s <string>  My string description  [string]',
-    '',
-    'Good Examples:',
-    '  A good example',
-    '  $ example 1',
-    '  $ example 2',
-    '',
-    'Bad Examples:',
-    '  A bad example',
-    '  $ example 3',
-    '',
-    'epilogue'
-  ].join('\n'))
-
+  t.same(helpText, 'Complete override')
   t.end()
 })
 
