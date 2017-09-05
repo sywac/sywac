@@ -20,7 +20,7 @@ tap.test('commandDirectory > supports multi-level', t => {
       '',
       'Commands:',
       '  one <subcommand>  Level one command',
-      '  top               Top level command'
+      '  top             '
     ].join('\n'))
   }))
 
@@ -71,7 +71,7 @@ tap.test('commandDirectory > supports absolute', t => {
         '',
         'Commands:',
         '  one <subcommand>  Level one command',
-        '  top               Top level command'
+        '  top             '
       ].join('\n'))
     })
 })

@@ -299,11 +299,20 @@ class Api {
       if (dir && typeof dir === 'string') searchDir = this.pathLib.resolve(searchDir, dir)
     }
     let filepath
+    let mod
     this.fsLib.readdirSync(searchDir).forEach(fileInDir => {
       filepath = this.pathLib.join(searchDir, fileInDir)
       if (opts.extensions.indexOf(this.pathLib.extname(fileInDir)) !== -1 && this._modulesSeen.indexOf(filepath) === -1) {
         this._modulesSeen.push(filepath)
-        this._internalCommand(require(filepath))
+        mod = require(filepath)
+        if (mod.flags || mod.aliases) {
+          this._internalCommand(mod)
+        } else if (typeof mod === 'function') {
+          this._internalCommand({
+            aliases: this.pathLib.basename(fileInDir, this.pathLib.extname(fileInDir)),
+            run: mod
+          })
+        }
       }
     })
     return this
