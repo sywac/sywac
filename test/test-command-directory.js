@@ -124,5 +124,6 @@ tap.test('commandDirectory > does not modify given opts', t => {
   const opts = { key: 'value' }
   Api.get().commandDirectory('./fixture2/level1', opts)
   t.equal(Object.keys(opts).length, 1)
+  t.equal(opts.key, 'value')
   t.end()
 })
