@@ -23,6 +23,10 @@ class TypePath extends TypeString {
     if (typeof override === 'undefined') override = true
     super.configure(opts, override)
 
+    // dependencies
+    if (override || !this._pathLib) this._pathLib = opts.pathLib || this._pathLib
+    if (override || !this._fsLib) this._fsLib = opts.fsLib || this._fsLib
+
     // booleans with a default value
     if (override || typeof this._dirAllowed === 'undefined') this._dirAllowed = 'dirAllowed' in opts ? opts.dirAllowed : this._dirAllowed
     if (override || typeof this._fileAllowed === 'undefined') this._fileAllowed = 'fileAllowed' in opts ? opts.fileAllowed : this._fileAllowed

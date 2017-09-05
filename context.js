@@ -11,6 +11,8 @@ class Context {
     opts = opts || {}
     // dependencies
     this._utils = opts.utils
+    this._pathLib = opts.pathLib
+    this._fsLib = opts.fsLib
     // config
     this.types = {}
     // args to parse per type
@@ -35,6 +37,16 @@ class Context {
   get utils () {
     if (!this._utils) this._utils = require('./lib/utils').get()
     return this._utils
+  }
+
+  get pathLib () {
+    if (!this._pathLib) this._pathLib = require('path')
+    return this._pathLib
+  }
+
+  get fsLib () {
+    if (!this._fsLib) this._fsLib = require('fs')
+    return this._fsLib
   }
 
   slurpArgs (args) {
@@ -208,17 +220,17 @@ class Context {
 
   addDeferredVersion () {
     if (!(this.versionRequested && this.versionRequested.version)) {
-      const path = require('path')
-      const fs = require('fs')
-      let dir = path.dirname(require.main.filename)
-      const root = path.parse(dir).root
+      let dir = this.pathLib.dirname(require.main.filename)
+      const root = this.pathLib.parse(dir).root
       let version
-      while (dir !== root) {
+      let attempts = 0 // protect against infinite tight loop if libs misbehave
+      while (dir !== root && attempts < 999) {
+        attempts++
         try {
-          version = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).version
+          version = JSON.parse(this.fsLib.readFileSync(this.pathLib.join(dir, 'package.json'), 'utf8')).version
           if (version) break
         } catch (_) {
-          dir = path.dirname(dir)
+          dir = this.pathLib.dirname(dir)
         }
       }
       if (!this.versionRequested) this.versionRequested = {}
