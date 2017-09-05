@@ -38,6 +38,7 @@ class Api {
     }
     this._showHelpByDefault = 'showHelpByDefault' in opts ? opts.showHelpByDefault : false
     this._magicCommandAdded = false
+    this._modulesSeen = opts.modulesSeen || []
     this.configure(opts)
     if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
   }
@@ -46,6 +47,8 @@ class Api {
     opts = opts || {}
     // lazily configured instance dependencies (expects a single instance)
     this._utils = opts.utils || this._utils
+    this._pathLib = opts.pathLib || this._pathLib
+    this._fsLib = opts.fsLib || this._fsLib
 
     // lazily configured factory dependencies (expects a function to call per instance)
     if ('factories' in opts) {
@@ -66,6 +69,7 @@ class Api {
       utils: this.utils,
       name: this.name + ' ' + commandName,
       parentName: this.name,
+      modulesSeen: this._modulesSeen.slice(),
       helpOpts: this._assignHelpOpts({}, this.helpOpts),
       showHelpByDefault: this._showHelpByDefault
     })
@@ -103,8 +107,18 @@ class Api {
     return this._helpOpts
   }
 
+  get pathLib () {
+    if (!this._pathLib) this._pathLib = require('path')
+    return this._pathLib
+  }
+
+  get fsLib () {
+    if (!this._fsLib) this._fsLib = require('fs')
+    return this._fsLib
+  }
+
   get name () {
-    if (typeof this._name !== 'string') this._name = require('path').basename(process.argv[1], '.js')
+    if (typeof this._name !== 'string') this._name = this.pathLib.basename(process.argv[1], '.js')
     return this._name
   }
 
@@ -268,6 +282,42 @@ class Api {
   }
 
   // complex types
+  commandDirectory (dir, opts) {
+    if (typeof dir === 'object') {
+      opts = dir
+      dir = ''
+    }
+    opts = Object.assign({}, opts)
+    if (!Array.isArray(opts.extensions)) opts.extensions = ['.js']
+    let searchDir
+    if (dir && typeof dir === 'string' && this.pathLib.isAbsolute(dir)) {
+      searchDir = dir
+    } else {
+      const callerFile = this.utils.getCallerFile()
+      if (this._modulesSeen.indexOf(callerFile) === -1) this._modulesSeen.push(callerFile)
+      searchDir = this.pathLib.dirname(callerFile)
+      if (dir && typeof dir === 'string') searchDir = this.pathLib.resolve(searchDir, dir)
+    }
+    let filepath
+    let mod
+    this.fsLib.readdirSync(searchDir).forEach(fileInDir => {
+      filepath = this.pathLib.join(searchDir, fileInDir)
+      if (opts.extensions.indexOf(this.pathLib.extname(fileInDir)) !== -1 && this._modulesSeen.indexOf(filepath) === -1) {
+        this._modulesSeen.push(filepath)
+        mod = require(filepath)
+        if (mod.flags || mod.aliases) {
+          this._internalCommand(mod)
+        } else if (typeof mod === 'function') {
+          this._internalCommand({
+            aliases: this.pathLib.basename(fileInDir, this.pathLib.extname(fileInDir)),
+            run: mod
+          })
+        }
+      }
+    })
+    return this
+  }
+
   command (dsl, opts) {
     this._internalCommand(dsl, opts)
     return this
