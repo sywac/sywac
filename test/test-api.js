@@ -187,3 +187,88 @@ tap.test('api > attempt to get unmapped type returns null (don\'t do this)', t =
   t.equal(nullType, null)
   t.end()
 })
+
+tap.test('api > custom path and fs libs', t => {
+  class FakePath {
+    // used by api
+    basename () {
+      this.basenameCalled = this.basenameCalled ? this.basenameCalled + 1 : 1
+      return 'test'
+    }
+    // used by api
+    isAbsolute () {
+      this.isAbsoluteCalled = this.isAbsoluteCalled ? this.isAbsoluteCalled + 1 : 1
+      return true
+    }
+    // used by context
+    dirname () {
+      this.dirnameCalled = this.dirnameCalled ? this.dirnameCalled + 1 : 1
+      return 'not-root'
+    }
+    // used by context
+    parse () {
+      this.parseCalled = this.parseCalled ? this.parseCalled + 1 : 1
+      return { root: 'root' }
+    }
+    // used by context
+    join () {
+      this.joinCalled = this.joinCalled ? this.joinCalled + 1 : 1
+      return 'ignored'
+    }
+  }
+
+  class FakeFs {
+    // used by api
+    readdirSync () {
+      this.readdirSyncCalled = this.readdirSyncCalled ? this.readdirSyncCalled + 1 : 1
+      return []
+    }
+    // used by types/path
+    stat (_, cb) {
+      this.statCalled = this.statCalled ? this.statCalled + 1 : 1
+      process.nextTick(() => {
+        cb(null, { isFile: () => true })
+      })
+    }
+    // used by context
+    readFileSync () {
+      this.readFileSyncCalled = this.readFileSyncCalled ? this.readFileSyncCalled + 1 : 1
+      return JSON.stringify({ version: '0.0.0-custom' })
+    }
+  }
+
+  const pathLib = new FakePath()
+  const fsLib = new FakeFs()
+  const api = Api.get().configure({ pathLib, fsLib })
+    .commandDirectory('x')  // api use of libs
+    .version()              // context use of libs
+    .path('-p <path>', {    // types/path use of libs
+      mustExist: true
+    })
+
+  const promises = []
+
+  promises.push(api.parse('-p anything').then(result => {
+    t.equal(result.code, 0)
+    t.equal(result.output, '')
+    t.equal(result.errors.length, 0)
+    t.equal(result.argv.p, 'anything')
+  }))
+
+  promises.push(api.parse('--version').then(result => {
+    t.equal(result.code, 0)
+    t.equal(result.output, '0.0.0-custom')
+    t.equal(result.errors.length, 0)
+  }))
+
+  return Promise.all(promises).then(whenDone => {
+    t.equal(pathLib.basenameCalled, 1)
+    t.equal(pathLib.isAbsoluteCalled, 1)
+    t.equal(pathLib.dirnameCalled, 1)
+    t.equal(pathLib.parseCalled, 1)
+    t.equal(pathLib.joinCalled, 1)
+    t.equal(fsLib.readdirSyncCalled, 1)
+    t.equal(fsLib.statCalled, 1)
+    t.equal(fsLib.readFileSyncCalled, 1)
+  })
+})

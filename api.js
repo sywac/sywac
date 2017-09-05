@@ -62,11 +62,11 @@ class Api {
   }
 
   newChild (commandName) {
-    // don't need from parent: types
-    // keep from parent: _factories, utils, name (plus command chain)
     return new Api({
       factories: this._factories,
       utils: this.utils,
+      pathLib: this.pathLib,
+      fsLib: this.fsLib,
       name: this.name + ' ' + commandName,
       parentName: this.name,
       modulesSeen: this._modulesSeen.slice(),
@@ -164,7 +164,10 @@ class Api {
   }
 
   getPath (opts) {
-    return require('./types/path').get(opts)
+    return require('./types/path').get(Object.assign({
+      pathLib: this.pathLib,
+      fsLib: this.fsLib
+    }, opts))
   }
 
   getFile (opts) {
@@ -664,7 +667,11 @@ class Api {
   }
 
   initContext (includeTypes) {
-    let context = this.get('_context', { utils: this.utils })
+    let context = this.get('_context', {
+      utils: this.utils,
+      pathLib: this.pathLib,
+      fsLib: this.fsLib
+    })
     return includeTypes ? this.applyTypes(context) : context
   }
 
