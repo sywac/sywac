@@ -108,3 +108,9 @@ tap.test('utils > sameArrays', t => {
   t.equal(utils.sameArrays(['one', 'two'], ['one']), false)
   t.end()
 })
+
+tap.test('utils > getCallerFile', t => {
+  const wrapper = () => utils.getCallerFile() // have to add one more call to stack
+  t.equal(wrapper(), __filename)
+  t.end()
+})
