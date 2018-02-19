@@ -240,9 +240,9 @@ tap.test('api > custom path and fs libs', t => {
   const pathLib = new FakePath()
   const fsLib = new FakeFs()
   const api = Api.get().configure({ pathLib, fsLib })
-    .commandDirectory('x')  // api use of libs
-    .version()              // context use of libs
-    .path('-p <path>', {    // types/path use of libs
+    .commandDirectory('x') // api use of libs
+    .version() // context use of libs
+    .path('-p <path>', { // types/path use of libs
       mustExist: true
     })
 

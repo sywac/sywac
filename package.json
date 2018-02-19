@@ -38,7 +38,7 @@
     "coveralls": "^3.0.0",
     "del": "^3.0.0",
     "require-uncached": "^1.0.3",
-    "standard": "^10.0.2",
+    "standard": "^11.0.0",
     "tap": "^11.0.0"
   }
 }
