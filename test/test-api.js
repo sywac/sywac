@@ -123,6 +123,23 @@ tap.test('api > help text with ANSI desc too wide (best effort)', t => {
   t.end()
 })
 
+// issue 21
+tap.test('api > help text with single word too wide in desc (best effort)', t => {
+  const helpText = Api.get()
+    .string('-s, --string <string>', {
+      desc: 'This used to cause an infinite loop in buffer\'s chunk method. See (https://documentation.mailgun.com/en/latest/user_manual.html#scheduling-delivery)'
+    })
+    .getHelp({ includeUsage: false })
+  t.equal(helpText, [
+    'Options:',
+    '  -s, --string <string>  This used to cause an infinite loop in buffer\'s chunk method. See',
+    '                         (https://documentation.mailgun.com/en/latest/user_manual.html#scheduling-d',
+    '                         elivery)',
+    '                         [string]'
+  ].join('\n'))
+  t.end()
+})
+
 tap.test('buffer > appendTypeSingleLine for type without helpFlags (not typically possible)', t => {
   const str = HelpBuffer.get().appendTypeSingleLine('', {
     helpDesc: 'desc',
