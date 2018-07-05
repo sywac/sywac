@@ -427,7 +427,7 @@ class Buffer {
     while (str) {
       noAnsi = this.utils.stripAnsi(str)
       index = noAnsi.length <= width ? width : this.lastIndexOfRegex(noAnsi, this.split, width)
-      if (index === -1) index = width
+      if (index < 1) index = width
       // TODO this ain't cutting it for ansi reconstitution
       chunk = str.slice(0, index).trim()
       ansiDiff = chunk.length - this.utils.stripAnsi(chunk).length
