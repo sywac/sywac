@@ -1,7 +1,7 @@
 'use strict'
 
 const tap = require('tap')
-const requireUncached = require('require-uncached')
+const importFresh = require('import-fresh')
 
 const TypeString = require('../types/string')
 const Utils = require('../lib/utils')
@@ -9,7 +9,7 @@ const Helper = require('./helper')
 
 tap.test('index > default singleton api', t => {
   const h = Helper.get('test-index')
-  const sywac = requireUncached('../index').string('-b, --branch <name>').boolean('-f, --force')
+  const sywac = importFresh('../index').string('-b, --branch <name>').boolean('-f, --force')
   return sywac.parse([]).then(result => {
     h.assertNoErrors(t, result)
     t.equal(result.argv.b, undefined)
@@ -50,7 +50,7 @@ tap.test('index > configured singleton api', t => {
 
   class CustomString extends TypeString { get datatype () { return 'custom' } }
 
-  return requireUncached('../index')
+  return importFresh('../index')
     .configure({
       name: name,
       utils: new CustomUtils(),
