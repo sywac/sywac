@@ -136,7 +136,7 @@ class Type {
 
   get helpHints () {
     if (typeof this._hints !== 'undefined') return this._hints
-    let hints = []
+    const hints = []
     this.buildHelpHints(hints)
     return hints.length ? '[' + hints.join('] [') + ']' : ''
   }
@@ -147,7 +147,7 @@ class Type {
     // datatype
     if (this.datatype) hintsArray.push(this.datatype)
     // default value
-    let dv = this._defaultVal
+    const dv = this._defaultVal
     if (dv && (!Array.isArray(dv) || dv.length)) hintsArray.push(`default: ${dv}`)
   }
 
@@ -243,7 +243,7 @@ class Type {
 
       arg.parsed.forEach((kv, kvIndex) => {
         if (!kv.key) return undefined
-        let matchedAlias = this.aliases.find(alias => alias === kv.key)
+        const matchedAlias = this.aliases.find(alias => alias === kv.key)
         lastKeyMatchesAlias = !!matchedAlias
         if (matchedAlias) {
           this.observeAlias(context, matchedAlias)
@@ -260,7 +260,7 @@ class Type {
 
   // async validation called from parse
   validateParsed (context) {
-    let promises = []
+    const promises = []
 
     promises.push(new Promise(resolve => {
       if (this.isRequired && !this.hasRequiredValue(context)) {

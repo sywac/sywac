@@ -33,7 +33,7 @@ class TypeUnknown extends Type {
   parse (context) {
     // console.log('parse', this.constructor.name)
     // find all slurped args that have unclaimed kv pairs
-    let unknownSlurped = []
+    const unknownSlurped = []
     let unclaimed, argParsedLength
     context.slurped.forEach(arg => {
       // filter arg.parsed to unclaimed
@@ -74,7 +74,7 @@ class TypeUnknown extends Type {
     })
 
     if (unparsed.length) {
-      let implicitCommands = Object.keys(this.implicit)
+      const implicitCommands = Object.keys(this.implicit)
       if (implicitCommands.length) unparsed = this._tryImplicitCommand(unparsed, context, implicitCommands)
     }
 
@@ -102,8 +102,8 @@ class TypeUnknown extends Type {
   }
 
   _tryImplicitCommand (unparsed, context, implicitCommands) {
-    let first = unparsed[0]
-    let matched = implicitCommands.find(alias => alias === first.raw) // maybe indexOf would be better/faster?
+    const first = unparsed[0]
+    const matched = implicitCommands.find(alias => alias === first.raw) // maybe indexOf would be better/faster?
     if (matched) {
       context.slurped[first.index].parsed[0].claimed = true
       this.implicit[matched].implicitCommandFound(context, Type.SOURCE_POSITIONAL, first.index, first.raw)
@@ -133,7 +133,7 @@ class TypeUnknown extends Type {
   _populatePositionals (unparsed, context) {
     // filter out positionals already populated via flags
     // (can populate via flags or positional args, but not both at same time)
-    let positionals = this.positionals.filter(p => context.lookupSourceValue(p.id) !== Type.SOURCE_FLAG)
+    const positionals = this.positionals.filter(p => context.lookupSourceValue(p.id) !== Type.SOURCE_FLAG)
     let numRequiredLeft = positionals.filter(p => p.isRequired).length
     let current = positionals.shift()
     let numArgsLeft = unparsed.length

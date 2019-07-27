@@ -212,21 +212,25 @@ tap.test('api > custom path and fs libs', t => {
       this.basenameCalled = this.basenameCalled ? this.basenameCalled + 1 : 1
       return 'test'
     }
+
     // used by api
     isAbsolute () {
       this.isAbsoluteCalled = this.isAbsoluteCalled ? this.isAbsoluteCalled + 1 : 1
       return true
     }
+
     // used by context
     dirname () {
       this.dirnameCalled = this.dirnameCalled ? this.dirnameCalled + 1 : 1
       return 'not-root'
     }
+
     // used by context
     parse () {
       this.parseCalled = this.parseCalled ? this.parseCalled + 1 : 1
       return { root: 'root' }
     }
+
     // used by context
     join () {
       this.joinCalled = this.joinCalled ? this.joinCalled + 1 : 1
@@ -240,6 +244,7 @@ tap.test('api > custom path and fs libs', t => {
       this.readdirSyncCalled = this.readdirSyncCalled ? this.readdirSyncCalled + 1 : 1
       return []
     }
+
     // used by types/path
     stat (_, cb) {
       this.statCalled = this.statCalled ? this.statCalled + 1 : 1
@@ -247,6 +252,7 @@ tap.test('api > custom path and fs libs', t => {
         cb(null, { isFile: () => true })
       })
     }
+
     // used by context
     readFileSync () {
       this.readFileSyncCalled = this.readFileSyncCalled ? this.readFileSyncCalled + 1 : 1

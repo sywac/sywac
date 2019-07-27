@@ -91,11 +91,11 @@ class TypePath extends TypeString {
 
   handleStatErr (err, context, value) {
     const msgMap = {
-      'EACCES_true': 'Cannot access %s: %s',
-      'EACCES_false': 'The %s already exists and is inaccessible: %s',
-      'ENOENT_true': 'The %s does not exist: %s'
+      EACCES_true: 'Cannot access %s: %s',
+      EACCES_false: 'The %s already exists and is inaccessible: %s',
+      ENOENT_true: 'The %s does not exist: %s'
     }
-    let msg = msgMap[err.code + '_' + this._mustExist]
+    const msg = msgMap[err.code + '_' + this._mustExist]
     if (msg) this.failValidation(context, msg, this.fulltype, value)
   }
 

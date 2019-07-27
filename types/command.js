@@ -87,12 +87,12 @@ class TypeCommand extends Type {
   }
 
   postParse (context) {
-    let match = context.matchCommand(this.api.parentName, this.validAliases, this.isDefault)
+    const match = context.matchCommand(this.api.parentName, this.validAliases, this.isDefault)
     if (!match.explicit && !match.implicit) return this.resolve()
 
     if (match.explicit) {
       // "claim" the arg from context.slurped so logic in unknownType works
-      let matchedArg = context.slurped.find(arg => {
+      const matchedArg = context.slurped.find(arg => {
         return arg.parsed.length === 1 && !arg.parsed[0].key && !arg.parsed[0].claimed && arg.raw === match.candidate
       })
       if (matchedArg) {

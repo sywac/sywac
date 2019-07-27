@@ -37,6 +37,7 @@ tap.test('parse > dashes allowed as unknown args', t => {
       super(opts)
       this.numParseableArgs = 0
     }
+
     parseSingleArg (arg) {
       this.numParseableArgs++
       return super.parseSingleArg(arg)

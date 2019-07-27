@@ -256,7 +256,7 @@ class Buffer {
 
   buildGroupedContent (groups, order, appendMethod) {
     let str = ''
-    let groupsLeft = JSON.parse(JSON.stringify(groups))
+    const groupsLeft = JSON.parse(JSON.stringify(groups))
     if (!order || !order.length) {
       // default order: Commands, Arguments, <custom>, Options
       order = Array.from(new Set(['Commands:', 'Arguments:'].concat(Object.keys(groupsLeft)).concat('Options:')))
@@ -293,7 +293,7 @@ class Buffer {
     types.forEach(type => {
       if (type.helpFlags) flagsWidth = Math.max(flagsWidth, this.utils.stripAnsi(type.helpFlags).length)
     })
-    let maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
+    const maxWidth = Math.max(this.maxWidth, this.indent.length + flagsWidth)
 
     if (heading) {
       const styledHeading = anyInvalid ? this.styleGroupError(heading) : this.styleGroup(heading)
@@ -301,7 +301,7 @@ class Buffer {
     }
 
     // if any types in this group require multi line, then just do all of them multi line
-    let multiline = types.some(type => this.determineLines(type, flagsWidth, maxWidth) > 1)
+    const multiline = types.some(type => this.determineLines(type, flagsWidth, maxWidth) > 1)
 
     // then add each line:
     // indent + flags + padding + indent + ((desc + padding + hints) || (descMultiline + hintsMultiline))
@@ -352,9 +352,9 @@ class Buffer {
   }
 
   appendTypeSingleLine (str, type, flagsWidth, maxWidth) {
-    let flag = type.helpFlags
-    let desc = type.helpDesc
-    let hint = type.helpHints
+    const flag = type.helpFlags
+    const desc = type.helpDesc
+    const hint = type.helpHints
     let line = ''
 
     if (flag) {
@@ -374,7 +374,7 @@ class Buffer {
   }
 
   appendTypeMultiLine (str, type, flagsWidth, maxWidth) {
-    let flag = type.helpFlags
+    const flag = type.helpFlags
     let desc = type.helpDesc
     let hint = type.helpHints
     let line = ''
@@ -388,7 +388,7 @@ class Buffer {
     if (line) leftOverWidth -= this.utils.stripAnsi(line).length
     if (desc || hint) leftOverWidth -= this.indent.length
     if (desc) {
-      let chunks = this.chunk(desc, leftOverWidth)
+      const chunks = this.chunk(desc, leftOverWidth)
       desc = chunks.shift()
       let first = true
       while (desc) {
@@ -402,7 +402,7 @@ class Buffer {
       line = ''
     }
     if (hint) {
-      let chunks = this.chunk(hint, leftOverWidth)
+      const chunks = this.chunk(hint, leftOverWidth)
       hint = chunks.shift()
       let first = !type.helpDesc
       while (hint) {
@@ -419,7 +419,7 @@ class Buffer {
 
   // split a string into an array of chunks which are each <= width
   chunk (str, width) {
-    let chunks = []
+    const chunks = []
     let chunk
     let ansiDiff
     let index
@@ -446,7 +446,7 @@ class Buffer {
   lastIndexOfRegex (str, regex, fromIndex) {
     // based on http://stackoverflow.com/a/21420210/1174467
     str = fromIndex ? str.substring(0, fromIndex) : str
-    let match = str.match(regex)
+    const match = str.match(regex)
     return match ? str.lastIndexOf(match[match.length - 1]) : -1
   }
 

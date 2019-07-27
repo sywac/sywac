@@ -27,7 +27,7 @@ class Api {
       path: this.getPath,
       file: this.getFile,
       dir: this.getDir,
-      'enum': this.getEnum,
+      enum: this.getEnum,
       array: this.getArray,
       // specialty types
       helpType: this.getHelpType,
@@ -240,7 +240,7 @@ class Api {
     } else if (!Array.isArray(example) && typeof example === 'object') {
       opts = example
     }
-    let group = opts.group || 'Examples:'
+    const group = opts.group || 'Examples:'
     if (!this.helpOpts.examples) this.helpOpts.examples = {}
     this.helpOpts.examples[group] = (this.helpOpts.examples[group] || []).concat(opts)
     return this
@@ -375,7 +375,7 @@ class Api {
     } else if (typeof dsl === 'string') {
       this.helpOpts.usagePositionals = (this.helpOpts.usagePositionals || []).concat(dsl)
       addedToHelp = true
-      let array = this.utils.stringToMultiPositional(dsl)
+      const array = this.utils.stringToMultiPositional(dsl)
       if (!opts.params) {
         opts.params = array
       } else if (Array.isArray(opts.params)) {
@@ -385,7 +385,7 @@ class Api {
       } else {
         opts.params = Object.keys(opts.params).map((key, index) => {
           let obj = opts.params[key]
-          if (obj && !obj.flags) obj = Object.assign({flags: array[index]}, obj)
+          if (obj && !obj.flags) obj = Object.assign({ flags: array[index] }, obj)
           // if (obj && !obj.aliases) obj.aliases = key
           return obj
         })
@@ -394,9 +394,9 @@ class Api {
 
     opts.ignore = [].concat(opts.ignore).filter(Boolean)
 
-    let params = Array.isArray(opts.params) ? opts.params.slice() : Object.keys(opts.params).map(key => {
+    const params = Array.isArray(opts.params) ? opts.params.slice() : Object.keys(opts.params).map(key => {
       let obj = opts.params[key]
-      if (obj && !obj.flags) obj = Object.assign({flags: key}, obj)
+      if (obj && !obj.flags) obj = Object.assign({ flags: key }, obj)
       return obj
     })
 
@@ -423,20 +423,20 @@ class Api {
       if (!param.group && opts.paramsGroup) param.group = opts.paramsGroup
 
       // don't apply command desc to positional params (via configure calls below)
-      let optsDescription = opts.description
-      let optsDesc = opts.desc
+      const optsDescription = opts.description
+      const optsDesc = opts.desc
       delete opts.description
       delete opts.desc
 
       // inferPositionalProperties will generate flags/aliases for wrapped elementType needed for parsing
-      let positionalFlags = param.flags
+      const positionalFlags = param.flags
       delete param.flags
 
       param = Object.assign(this.utils.inferPositionalProperties(positionalFlags, Object.keys(this._factories)), param)
       if (!param.elementType) param.elementType = this._getType(param).configure(opts, false)
 
       param.flags = positionalFlags
-      let positional = this.get('positional', param).configure(opts, false)
+      const positional = this.get('positional', param).configure(opts, false)
 
       opts.description = optsDescription
       opts.desc = optsDesc
@@ -480,7 +480,7 @@ class Api {
 
     name = String(name || opts.type)
     if (name.indexOf(':') !== -1) {
-      let types = name.split(':').filter(Boolean)
+      const types = name.split(':').filter(Boolean)
       if (types[0] === 'array') return this._getArrayType(flags, opts, types.slice(1).join(':') || 'string')
       name = types[0]
     }
@@ -493,7 +493,7 @@ class Api {
 
     subtypeName = String(subtypeName || opts.type)
     if (subtypeName.indexOf(':') !== -1) {
-      let types = subtypeName.split(':').filter(Boolean)
+      const types = subtypeName.split(':').filter(Boolean)
       if (types[0] === 'array') {
         opts.elementType = this._getArrayType(flags, opts, types.slice(1).join(':') || 'string')
         return this.get('array', opts)
@@ -586,7 +586,7 @@ class Api {
   // useful for chatbots or checking results
   parse (args) {
     // init context and kick off recursive type parsing/execution
-    let context = this.initContext(false).slurpArgs(args)
+    const context = this.initContext(false).slurpArgs(args)
 
     // init unknownType in context only for the top-level (all levels share/overwrite the same argv._)
     if (this.unknownType) {
@@ -620,7 +620,7 @@ class Api {
     this.types.forEach(type => {
       if (type.needsApi) type.configure({ api: this.newChild(type.aliases[0]) }, false)
 
-      let implicit = type.implicitCommands
+      const implicit = type.implicitCommands
       if (implicit && implicit.length) this.unknownType.addImplicit(implicit, type)
 
       if (type.datatype === 'command') {
@@ -638,7 +638,7 @@ class Api {
     // add known types to context
     this.applyTypes(context)
     // run async parsing for all types except unknown
-    let parsePromises = this.types.map(type => type.parse(context))
+    const parsePromises = this.types.map(type => type.parse(context))
 
     return Promise.all(parsePromises).then(whenDone => {
       // now run async parsing for unknown
@@ -667,7 +667,7 @@ class Api {
   }
 
   initContext (includeTypes) {
-    let context = this.get('_context', {
+    const context = this.get('_context', {
       utils: this.utils,
       pathLib: this.pathLib,
       fsLib: this.fsLib
@@ -685,7 +685,7 @@ class Api {
   }
 
   initHelpBuffer () {
-    let helpOpts = Object.assign({ utils: this.utils, usageName: this.name }, this.helpOpts)
+    const helpOpts = Object.assign({ utils: this.utils, usageName: this.name }, this.helpOpts)
     return this.get('helpBuffer', helpOpts)
   }
 
