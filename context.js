@@ -147,7 +147,20 @@ class Context {
 
   cliMessage (msg) {
     // do NOT modify this.code here - the messages will be disregarded if help is requested
-    this.messages.push(format.apply(null, arguments))
+    const argsLen = arguments.length
+    const args = new Array(argsLen - 1)
+    for (let i = 0; i < argsLen; ++i) {
+      args[i] = arguments[i]
+      // if any args are an array, join into string
+      // this is a hack to get Node 12's util.format working like Node 10's
+      // e.g. require('util').format("Value \"%s\" is invalid.", ["web", "docs"])
+      // Node 10: Value "web,docs" is invalid.
+      // Node 12: Value "[ 'web', 'docs' ]" is invalid.
+      if (Array.isArray(args[i])) {
+        args[i] = args[i].join(',')
+      }
+    }
+    this.messages.push(format.apply(null, args))
   }
 
   markTypeInvalid (id) {
