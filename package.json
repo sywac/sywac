@@ -36,7 +36,7 @@
   "devDependencies": {
     "chalk": "^2.4.2",
     "coveralls": "^3.0.5",
-    "del": "^3.0.0",
+    "del": "^5.0.0",
     "import-fresh": "^3.1.0",
     "standard": "^11.0.0",
     "tap": "^12.0.1"
