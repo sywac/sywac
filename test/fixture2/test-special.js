@@ -26,7 +26,7 @@ tap.test('commandDirectory > supports no arg (directory of caller)', t => {
 
 tap.test('commandDirectory > supports opts only', t => {
   return Api.get({ name: 'test' })
-    .commandDirectory({ extensions: ['.mjs'] })
+    .commandDirectory({ extensions: ['.cjs'] })
     .help()
     .outputSettings({ maxWidth: 50 })
     .parse('--help')
@@ -37,7 +37,7 @@ tap.test('commandDirectory > supports opts only', t => {
         'Usage: test <command> [options]',
         '',
         'Commands:',
-        '  module  A module with mjs file extension',
+        '  module  A module with cjs file extension',
         '',
         'Options:',
         '  --help  Show help     [commands: help] [boolean]'
