@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "pretest": "standard",
-    "test": "FORCE_COLOR=1 tap --cov --jobs=4 test/test*.js test/lib/test*.js test/types/test*.js test/fixture2/test*.js",
+    "test": "tap",
     "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "engines": {
@@ -39,6 +39,6 @@
     "del": "^5.0.0",
     "import-fresh": "^3.1.0",
     "standard": "^13.1.0",
-    "tap": "^12.0.1"
+    "tap": "^14.4.3"
   }
 }
