@@ -25,7 +25,7 @@ class TypeImplicitCommand extends TypeBoolean {
   }
 
   buildHelpHints (hints) {
-    let commands = this.implicitCommands
+    const commands = this.implicitCommands
     if (commands.length) hints.push('commands: ' + commands.join(', '))
     super.buildHelpHints(hints)
   }

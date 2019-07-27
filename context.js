@@ -54,8 +54,8 @@ class Context {
     if (!args) args = process.argv.slice(2)
     if (!Array.isArray(args)) args = [].concat(args)
     // TODO read from stdin with no args? based on config?
-    let parseable = []
-    let extra = []
+    const parseable = []
+    const extra = []
     let isExtra = false
     for (let i = 0, len = args.length, arg; i < len; i++) {
       arg = String(args[i])
@@ -98,7 +98,7 @@ class Context {
 
   parseSingleArg (arg) {
     // short-circuit if no flag
-    let numBeginningDashes = (arg.match(/^-+/) || [''])[0].length
+    const numBeginningDashes = (arg.match(/^-+/) || [''])[0].length
     if (numBeginningDashes === 0) {
       return [{
         key: '',
@@ -106,9 +106,9 @@ class Context {
       }]
     }
     // otherwise check for =value somewhere in arg
-    let kvDelimIndex = arg.indexOf('=')
-    let flags = kvDelimIndex > 1 ? arg.substring(numBeginningDashes, kvDelimIndex) : arg.slice(numBeginningDashes)
-    let value = kvDelimIndex > 1 ? arg.substring(kvDelimIndex + 1) : undefined
+    const kvDelimIndex = arg.indexOf('=')
+    const flags = kvDelimIndex > 1 ? arg.substring(numBeginningDashes, kvDelimIndex) : arg.slice(numBeginningDashes)
+    const value = kvDelimIndex > 1 ? arg.substring(kvDelimIndex + 1) : undefined
     // allow an arg of just dashes e.g. '-'
     if (!flags && !value) {
       return [{
@@ -124,7 +124,7 @@ class Context {
       }]
     }
     // may be multiple single-length flags, with value belonging to the last one
-    let kvArray = flags.split('').map(flag => {
+    const kvArray = flags.split('').map(flag => {
       return {
         key: flag,
         value: true
@@ -164,7 +164,7 @@ class Context {
   }
 
   markTypeInvalid (id) {
-    let mappedLevels = Object.keys(this.types)
+    const mappedLevels = Object.keys(this.types)
     for (let i = mappedLevels.length - 1, currentLevel, found; i >= 0; i--) {
       currentLevel = mappedLevels[i]
       found = (this.types[currentLevel] || []).find(type => type.id === id)
@@ -199,8 +199,8 @@ class Context {
   }
 
   addDeferredHelp (helpBuffer) {
-    let groups = {}
-    let mappedLevels = Object.keys(this.types)
+    const groups = {}
+    const mappedLevels = Object.keys(this.types)
     for (let i = mappedLevels.length - 1, currentLevel; i >= 0; i--) {
       currentLevel = mappedLevels[i]
       ;(this.types[currentLevel] || []).forEach(type => {

@@ -47,7 +47,7 @@ class TypeArray extends TypeWrapper {
   }
 
   get datatype () {
-    let subtype = this.elementType.datatype
+    const subtype = this.elementType.datatype
     return 'array' + (subtype ? `:${subtype}` : '')
   }
 
@@ -59,7 +59,7 @@ class TypeArray extends TypeWrapper {
 
   isApplicable (context, currentValue, previousValue, slurpedArg) {
     // remove last element if previous value was not explicit
-    let v = context.lookupValue(this.id)
+    const v = context.lookupValue(this.id)
     if (v && v.length && typeof previousValue !== 'string') v.pop()
     this.elementType.isApplicable(context, currentValue, previousValue, slurpedArg)
     return true // TODO this is greedy (`--key=one two` includes `one` and `two`), make this configurable
@@ -77,7 +77,7 @@ class TypeArray extends TypeWrapper {
     if (context.lookupSourceValue(this.id) === SOURCE_DEFAULT) context.assignValue(this.id, [])
 
     if (Array.isArray(value)) {
-      let v = context.lookupValue(this.id)
+      const v = context.lookupValue(this.id)
       context.assignValue(this.id, (v || []).concat(value))
       return
     }
@@ -95,7 +95,7 @@ class TypeArray extends TypeWrapper {
       v = []
       context.assignValue(this.id, v)
     }
-    let elementValue = this.elementType.getValue(context)
+    const elementValue = this.elementType.getValue(context)
     if (Array.isArray(elementValue) && v.length && v[v.length - 1] === elementValue) {
       return // we already have elementValue, it's just been modified
     }
