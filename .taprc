@@ -1,0 +1,10 @@
+color: true
+coverage: true
+jobs: 4
+files:
+  - test/test*.js
+  - test/lib/test*.js
+  - test/types/test*.js
+  - test/fixture2/test*.js
+test-env:
+  - FORCE_COLOR=1
