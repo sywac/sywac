@@ -87,7 +87,7 @@ tap.test('utils > stringToMultiPositional', t => {
 })
 
 tap.test('utils > stringToArgs', t => {
-  t.same(utils.stringToArgs(`-k -v 'won\\'t keep' one "two three" "x`), ['-k', '-v', 'won\'t keep', 'one', 'two three', 'x'])
+  t.same(utils.stringToArgs('-k -v \'won\\\'t keep\' one "two three" "x'), ['-k', '-v', 'won\'t keep', 'one', 'two three', 'x'])
   t.end()
 })
 
