@@ -34,7 +34,7 @@
   },
   "homepage": "http://sywac.io",
   "devDependencies": {
-    "chalk": "^2.4.2",
+    "chalk": "^3.0.0",
     "coveralls": "^3.0.9",
     "del": "^5.1.0",
     "import-fresh": "^3.2.1",
