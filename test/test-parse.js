@@ -250,7 +250,7 @@ tap.test('parse > strict mode prevents unknown options and arguments in command 
     t.equal(result.errors.length, 0)
     return api.parse('send 111 222 333 --hello')
   }).then(result => {
-    t.equal(result.code, 1)
+    t.equal(result.code, 2)
     t.match(result.output, /Unknown arguments: 222 333/)
     t.match(result.output, /Unknown options: --hello/)
     t.equal(result.errors.length, 0)
