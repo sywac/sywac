@@ -122,6 +122,7 @@ class TypeCommand extends Type {
       // only run innermost command handler
       if (context.commandHandlerRun) return this.resolve()
       context.commandHandlerRun = true
+      this.api.addStrictModeErrors(context)
       if (context.helpRequested || context.messages.length) {
         // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
         if (!context.output) context.addDeferredHelp(this.api.initHelpBuffer())
