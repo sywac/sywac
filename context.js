@@ -25,6 +25,7 @@ class Context {
     this.code = 0
     this.output = ''
     this.argv = {}
+    this.knownArgv = {}
     this.details = { args: [], types: [] }
     this.errors = []
     this.messages = []
@@ -299,7 +300,20 @@ class Context {
       if (tr.datatype === 'command') return undefined // do not add command aliases to argv
       tr.aliases.forEach(alias => {
         this.argv[alias] = tr.value
+        this.knownArgv[alias] = tr.value
       })
+    })
+  }
+
+  getUnknownArguments () {
+    if (!Array.isArray(this.argv._)) return []
+    const endOptions = this.argv._.indexOf('--')
+    return this.argv._.slice(0, endOptions === -1 ? this.argv._.length : endOptions)
+  }
+
+  getUnknownSlurpedOptions () {
+    return Object.keys(this.argv).filter(key => !(key in this.knownArgv)).map(key => {
+      return this.slurped.find(arg => arg.parsed.some(p => p.key === key))
     })
   }
 

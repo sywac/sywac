@@ -37,6 +37,7 @@ class Api {
       commandType: this.getCommand
     }
     this._showHelpByDefault = 'showHelpByDefault' in opts ? opts.showHelpByDefault : false
+    this._strictMode = 'strictMode' in opts ? opts.strictMode : false
     this._magicCommandAdded = false
     this._modulesSeen = opts.modulesSeen || []
     this.configure(opts)
@@ -61,8 +62,8 @@ class Api {
     return this
   }
 
-  newChild (commandName) {
-    return new Api({
+  newChild (commandName, childOptions) {
+    return new Api(Object.assign({
       factories: this._factories,
       utils: this.utils,
       pathLib: this.pathLib,
@@ -71,8 +72,9 @@ class Api {
       parentName: this.name,
       modulesSeen: this._modulesSeen.slice(),
       helpOpts: this._assignHelpOpts({}, this.helpOpts),
-      showHelpByDefault: this._showHelpByDefault
-    })
+      showHelpByDefault: this._showHelpByDefault,
+      strictMode: this._strictMode
+    }, childOptions))
   }
 
   _assignHelpOpts (target, source) {
@@ -282,6 +284,24 @@ class Api {
   showHelpByDefault (boolean) {
     this._showHelpByDefault = boolean !== false
     return this
+  }
+
+  strict (boolean) {
+    this._strictMode = boolean !== false
+    return this
+  }
+
+  addStrictModeErrors (context) {
+    if (this._strictMode) {
+      const unknownOptions = context.getUnknownSlurpedOptions()
+      if (unknownOptions.length > 0) {
+        context.cliMessage(`Unknown options: ${unknownOptions.map(u => u.raw).join(', ')}`)
+      }
+      const unknownArguments = context.getUnknownArguments()
+      if (unknownArguments.length > 0) {
+        context.cliMessage(`Unknown arguments: ${unknownArguments.join(' ')}`)
+      }
+    }
   }
 
   // complex types
@@ -597,6 +617,10 @@ class Api {
     if (this._showHelpByDefault && !context.details.args.length) context.deferHelp() // preemptively request help
 
     return this.parseFromContext(context).then(whenDone => {
+      if (!context.commandHandlerRun && !context.output) {
+        this.addStrictModeErrors(context)
+      }
+
       if (context.helpRequested && !context.output) {
         context.addDeferredHelp(this.initHelpBuffer())
       } else if (context.versionRequested && !context.output) {
@@ -632,7 +656,7 @@ class Api {
       this._magicCommandAdded = true
       this._internalCommand(Api.DEFAULT_COMMAND_INDICATOR, (argv, context) => {
         context.deferHelp().addDeferredHelp(this.initHelpBuffer())
-      }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR) }, false)
+      }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR, { strictMode: false }) }, false)
     }
 
     // add known types to context
