@@ -62,8 +62,8 @@ class Api {
     return this
   }
 
-  newChild (commandName) {
-    return new Api({
+  newChild (commandName, childOptions) {
+    return new Api(Object.assign({
       factories: this._factories,
       utils: this.utils,
       pathLib: this.pathLib,
@@ -74,7 +74,7 @@ class Api {
       helpOpts: this._assignHelpOpts({}, this.helpOpts),
       showHelpByDefault: this._showHelpByDefault,
       strictMode: this._strictMode
-    })
+    }, childOptions))
   }
 
   _assignHelpOpts (target, source) {
@@ -656,7 +656,7 @@ class Api {
       this._magicCommandAdded = true
       this._internalCommand(Api.DEFAULT_COMMAND_INDICATOR, (argv, context) => {
         context.deferHelp().addDeferredHelp(this.initHelpBuffer())
-      }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR) }, false)
+      }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR, { strictMode: false }) }, false)
     }
 
     // add known types to context
