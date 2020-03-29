@@ -262,6 +262,80 @@ tap.test('parse > strict mode prevents unknown options and arguments in command 
   })
 })
 
+tap.test('parse > strict mode still allows showHelpByDefault to work', t => {
+  let ranCommand = false
+  const api = Api.get({ name: 'program' })
+    .string('-n, --name <string>')
+    .number('-a, --age <number>')
+    .command('send <studentid>', argv => {
+      ranCommand = true
+    })
+    .strict()
+    .showHelpByDefault()
+    .outputSettings({ maxWidth: 41 })
+  return api.parse('').then(result => {
+    t.equal(result.code, 0)
+    t.equal(result.errors.length, 0)
+    t.equal(result.output, [
+      'Usage: program <command> <args> [options]',
+      '',
+      'Commands:',
+      '  send <studentid>',
+      '',
+      'Options:',
+      '  -n, --name <string>            [string]',
+      '  -a, --age <number>             [number]'
+    ].join('\n'))
+    t.equal(ranCommand, false)
+    return api.parse('send 111 222 --nmae Fred --age 24')
+  }).then(result => {
+    t.equal(result.code, 2)
+    t.equal(result.errors.length, 0)
+    t.equal(result.output, [
+      'Usage: program send <studentid> [options]',
+      '',
+      'Arguments:',
+      '  <studentid>         [required] [string]',
+      '',
+      'Options:',
+      '  -n, --name <string>            [string]',
+      '  -a, --age <number>             [number]',
+      '',
+      'Unknown options: --nmae',
+      'Unknown arguments: 222'
+    ].join('\n'))
+    t.equal(ranCommand, false)
+    return api.parse('send 111 --name Fred --age 24')
+  }).then(result => {
+    t.equal(result.code, 0)
+    t.equal(ranCommand, true)
+  })
+})
+
+tap.test('parse > strict mode ignores options/arguments after --', t => {
+  let commandArguments
+  const api = Api.get()
+    .string('-n, --name <string>')
+    .number('-a, --age <number>')
+    .command('send <studentid>', argv => {
+      commandArguments = argv._
+    })
+    .strict()
+  return api.parse('send 111 -n Fred --aeg 24 222 -- 333 --force').then(result => {
+    t.equal(result.code, 2)
+    t.match(result.output, /Unknown options: --aeg/)
+    t.match(result.output, /Unknown arguments: 222/)
+    t.equal(result.errors.length, 0)
+    t.equal(commandArguments, undefined)
+    return api.parse('send 111 -n Fred --age 24 -- 222 333 --force')
+  }).then(result => {
+    t.equal(result.code, 0)
+    t.equal(result.errors.length, 0)
+    t.equal(result.output, '')
+    t.strictSame(commandArguments, ['--', '222', '333', '--force'])
+  })
+})
+
 tap.test('parse > coerced types', t => {
   const promises = []
 

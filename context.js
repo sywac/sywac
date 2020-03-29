@@ -306,16 +306,14 @@ class Context {
   }
 
   getUnknownArguments () {
-    return this.argv._
+    if (!Array.isArray(this.argv._)) return []
+    const endOptions = this.argv._.indexOf('--')
+    return this.argv._.slice(0, endOptions === -1 ? this.argv._.length : endOptions)
   }
 
   getUnknownSlurpedOptions () {
-    const known = Object.keys(this.knownArgv)
-    const provided = Object.keys(this.argv)
-    const unknown = provided.filter(key => !known.includes(key))
-
-    return unknown.map(key => {
-      return this.slurped.find(arg => arg.parsed.find(p => p.key === key))
+    return Object.keys(this.argv).filter(key => !(key in this.knownArgv)).map(key => {
+      return this.slurped.find(arg => arg.parsed.some(p => p.key === key))
     })
   }
 
