@@ -47,19 +47,21 @@ class TypePositional extends TypeWrapper {
   }
 
   // called by api
-  parse (context) {
+  async parse (context) {
     // only need to parse for flags
     // otherwise will be populated by unknownType
     if (this.acceptFlags) {
       // first pass of parsing checks for flags with validation disabled
-      return this.elementType._internalParse(context, false).then(whenDone => this.resolve())
+      await this.elementType._internalParse(context, false)
+      return this.resolve()
     }
     return super.resolve()
   }
 
   // called by unknownType
-  validateParsed (context) {
-    return this.elementType.validateParsed(context).then(whenDone => super.resolve())
+  async validateParsed (context) {
+    await this.elementType.validateParsed(context)
+    return super.resolve()
   }
 
   // called by unknownType

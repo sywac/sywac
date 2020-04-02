@@ -591,20 +591,19 @@ class Api {
 
   // parse and exit if there's output (e.g. help text) or a non-zero code; otherwise resolves to argv
   // useful for standard CLIs
-  parseAndExit (args) {
-    return this.parse(args).then(result => {
-      if (result.output) {
-        console.log(result.output)
-        process.exit(result.code)
-      }
-      if (result.code !== 0) process.exit(result.code)
-      return result.argv
-    })
+  async parseAndExit (args) {
+    const result = await this.parse(args)
+    if (result.output) {
+      console.log(result.output) // TODO
+      process.exit(result.code)
+    }
+    if (result.code !== 0) process.exit(result.code)
+    return result.argv
   }
 
   // parse and resolve to a context result (never exits)
   // useful for chatbots or checking results
-  parse (args) {
+  async parse (args) {
     // init context and kick off recursive type parsing/execution
     const context = this.initContext(false).slurpArgs(args)
 
@@ -616,7 +615,9 @@ class Api {
 
     if (this._showHelpByDefault && !context.details.args.length) context.deferHelp() // preemptively request help
 
-    return this.parseFromContext(context).then(whenDone => {
+    try {
+      await this.parseFromContext(context)
+
       if (!context.commandHandlerRun && !context.output) {
         this.addStrictModeErrors(context)
       }
@@ -628,16 +629,15 @@ class Api {
       } else if (context.messages.length && !context.output) {
         context.addDeferredHelp(this.initHelpBuffer())
       }
-      return whenDone
-    }).catch(err => {
+    } catch (err) {
       context.unexpectedError(err)
-    }).then(whenDone => {
-      return context.toResult()
-    })
+    }
+
+    return context.toResult()
   }
 
   // recursive, meant to be used internally
-  parseFromContext (context) {
+  async parseFromContext (context) {
     // first complete configuration for special types
     let hasCommands = false
     let hasDefaultCommand = false
@@ -664,30 +664,34 @@ class Api {
     // run async parsing for all types except unknown
     const parsePromises = this.types.map(type => type.parse(context))
 
-    return Promise.all(parsePromises).then(whenDone => {
-      // now run async parsing for unknown
-      return (this.unknownType && this.unknownType.parse(context)) || Promise.resolve(true)
-    }).then(whenDone => {
+    await Promise.all(parsePromises)
+
+    // now run async parsing for unknown
+    if (this.unknownType) {
+      await this.unknownType.parse(context)
+
       // once all parsing is complete, populate argv in context (sync)
       // first add unknownType to context.argv (because it's needed to determine shouldCoerceAndCheck)
-      if (this.unknownType) context.populateArgv([this.unknownType.toResult(context, true)])
-      // next determine shouldCoerceAndCheck
-      const shouldCoerceAndCheck = this.shouldCoerceAndCheck(context)
-      // then populate argv with other types, letting them know if it makes sense to apply coercion
-      context.populateArgv(this.types.map(type => type.toResult(context, shouldCoerceAndCheck)))
+      context.populateArgv([this.unknownType.toResult(context, true)])
+    }
 
-      // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
+    // next determine shouldCoerceAndCheck
+    const shouldCoerceAndCheck = this.shouldCoerceAndCheck(context)
+    // then populate argv with other types, letting them know if it makes sense to apply coercion
+    context.populateArgv(this.types.map(type => type.toResult(context, shouldCoerceAndCheck)))
 
-      // run custom api-level async argv check/hook between argv population and command execution
-      // it should use context.cliMessage to report errors (or can otherwise manipulate context)
-      if (typeof this._checkHandler === 'function' && shouldCoerceAndCheck) return this._checkHandler(context.argv, context)
-      return Promise.resolve(true)
-    }).then(whenDone => {
-      // run async post-parsing
-      let postParse = this.types.map(type => type.postParse(context)) // this potentially runs commands
-      if (this.unknownType) postParse = postParse.concat(this.unknownType.postParse(context))
-      return Promise.all(postParse)
-    })
+    // TODO before postParse, determine if any are promptable (and need prompting) and prompt each in series
+
+    // run custom api-level async argv check/hook between argv population and command execution
+    // it should use context.cliMessage to report errors (or can otherwise manipulate context)
+    if (typeof this._checkHandler === 'function' && shouldCoerceAndCheck) {
+      await this._checkHandler(context.argv, context)
+    }
+
+    // run async post-parsing
+    let postParse = this.types.map(type => type.postParse(context)) // this potentially runs commands
+    if (this.unknownType) postParse = postParse.concat(this.unknownType.postParse(context))
+    return Promise.all(postParse)
   }
 
   initContext (includeTypes) {
