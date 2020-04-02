@@ -86,7 +86,7 @@ class TypeCommand extends Type {
     return super.resolve()
   }
 
-  postParse (context) {
+  async postParse (context) {
     const match = context.matchCommand(this.api.parentName, this.validAliases, this.isDefault)
     if (!match.explicit && !match.implicit) return this.resolve()
 
@@ -118,18 +118,18 @@ class TypeCommand extends Type {
       this.setupHandler(this.api)
     }
 
-    return this.api.parseFromContext(context).then(whenDone => {
-      // only run innermost command handler
-      if (context.commandHandlerRun) return this.resolve()
-      context.commandHandlerRun = true
-      this.api.addStrictModeErrors(context)
-      if (context.helpRequested || context.messages.length) {
-        // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
-        if (!context.output) context.addDeferredHelp(this.api.initHelpBuffer())
-        return this.resolve()
-      }
-      return this.runHandler(context.argv, context)
-    })
+    await this.api.parseFromContext(context)
+
+    // only run innermost command handler
+    if (context.commandHandlerRun) return this.resolve()
+    context.commandHandlerRun = true
+    this.api.addStrictModeErrors(context)
+    if (context.helpRequested || context.messages.length) {
+      // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
+      if (!context.output) context.addDeferredHelp(this.api.initHelpBuffer())
+      return this.resolve()
+    }
+    return this.runHandler(context.argv, context)
   }
 }
 

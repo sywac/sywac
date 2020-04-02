@@ -259,33 +259,23 @@ class Type {
   }
 
   // async validation called from parse
-  validateParsed (context) {
-    const promises = []
+  async validateParsed (context) {
+    if (this.isRequired && !this.hasRequiredValue(context)) {
+      const msgAndArgs = { msg: '', args: [] }
+      this.buildRequiredMessage(context, msgAndArgs)
+      if (msgAndArgs.msg) this.failValidation(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
+    }
 
-    promises.push(new Promise(resolve => {
-      if (this.isRequired && !this.hasRequiredValue(context)) {
+    if (this.isStrict && (context.lookupSourceValue(this.id) !== Type.SOURCE_DEFAULT || this.shouldValidateDefaultValue)) {
+      const isValid = await this.validateValue(this.getValue(context), context)
+      if (!isValid) {
         const msgAndArgs = { msg: '', args: [] }
-        this.buildRequiredMessage(context, msgAndArgs)
+        this.buildInvalidMessage(context, msgAndArgs)
         if (msgAndArgs.msg) this.failValidation(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
       }
-      resolve()
-    }))
+    }
 
-    promises.push(new Promise(resolve => {
-      if (this.isStrict && (context.lookupSourceValue(this.id) !== Type.SOURCE_DEFAULT || this.shouldValidateDefaultValue)) {
-        return Promise.resolve(this.validateValue(this.getValue(context), context)).then(isValid => {
-          if (!isValid) {
-            const msgAndArgs = { msg: '', args: [] }
-            this.buildInvalidMessage(context, msgAndArgs)
-            if (msgAndArgs.msg) this.failValidation(context, [msgAndArgs.msg].concat(msgAndArgs.args || []))
-          }
-          resolve()
-        })
-      }
-      resolve()
-    }))
-
-    return Promise.all(promises).then(this.resolve)
+    return this.resolve()
   }
 
   failValidation (context, msg) {

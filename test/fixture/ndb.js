@@ -41,5 +41,10 @@ sywac
   .usage({ prefix: chalk`{white Usage:} {magenta $0}` })
   .outputSettings({ maxWidth: 90 })
 
-// only prints argv if a command handler was run
-sywac.parseAndExit().then(argv => console.log(JSON.stringify(argv, null, 2)))
+async function main () {
+  // only prints argv if a command handler was run
+  const argv = await sywac.parseAndExit()
+  console.log(JSON.stringify(argv, null, 2))
+}
+
+main()

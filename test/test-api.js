@@ -205,7 +205,7 @@ tap.test('api > attempt to get unmapped type returns null (don\'t do this)', t =
   t.end()
 })
 
-tap.test('api > custom path and fs libs', t => {
+tap.test('api > custom path and fs libs', async t => {
   class FakePath {
     // used by api
     basename () {
@@ -271,27 +271,27 @@ tap.test('api > custom path and fs libs', t => {
 
   const promises = []
 
-  promises.push(api.parse('-p anything').then(result => {
-    t.equal(result.code, 0)
-    t.equal(result.output, '')
-    t.equal(result.errors.length, 0)
-    t.equal(result.argv.p, 'anything')
-  }))
+  promises.push(api.parse('-p anything'))
 
-  promises.push(api.parse('--version').then(result => {
-    t.equal(result.code, 0)
-    t.equal(result.output, '0.0.0-custom')
-    t.equal(result.errors.length, 0)
-  }))
+  promises.push(api.parse('--version'))
 
-  return Promise.all(promises).then(whenDone => {
-    t.equal(pathLib.basenameCalled, 1)
-    t.equal(pathLib.isAbsoluteCalled, 1)
-    t.equal(pathLib.dirnameCalled, 1)
-    t.equal(pathLib.parseCalled, 1)
-    t.equal(pathLib.joinCalled, 1)
-    t.equal(fsLib.readdirSyncCalled, 1)
-    t.equal(fsLib.statCalled, 1)
-    t.equal(fsLib.readFileSyncCalled, 1)
-  })
+  const [result1, result2] = await Promise.all(promises)
+
+  t.equal(result1.code, 0)
+  t.equal(result1.output, '')
+  t.equal(result1.errors.length, 0)
+  t.equal(result1.argv.p, 'anything')
+
+  t.equal(result2.code, 0)
+  t.equal(result2.output, '0.0.0-custom')
+  t.equal(result2.errors.length, 0)
+
+  t.equal(pathLib.basenameCalled, 1)
+  t.equal(pathLib.isAbsoluteCalled, 1)
+  t.equal(pathLib.dirnameCalled, 1)
+  t.equal(pathLib.parseCalled, 1)
+  t.equal(pathLib.joinCalled, 1)
+  t.equal(fsLib.readdirSyncCalled, 1)
+  t.equal(fsLib.statCalled, 1)
+  t.equal(fsLib.readFileSyncCalled, 1)
 })

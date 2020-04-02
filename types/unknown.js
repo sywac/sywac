@@ -30,7 +30,7 @@ class TypeUnknown extends Type {
     })
   }
 
-  parse (context) {
+  async parse (context) {
     // console.log('parse', this.constructor.name)
     // find all slurped args that have unclaimed kv pairs
     const unknownSlurped = []
@@ -95,7 +95,7 @@ class TypeUnknown extends Type {
     if (v.length > 0) this.applySource(context, Type.SOURCE_POSITIONAL)
 
     if (this.positionals && this.positionals.length) {
-      return Promise.all(this.positionals.map(p => p.validateParsed(context))).then(whenDone => super.resolve())
+      await Promise.all(this.positionals.map(p => p.validateParsed(context)))
     }
 
     return super.resolve()

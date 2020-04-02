@@ -106,10 +106,9 @@ class TypeArray extends TypeWrapper {
     return super.isStrict || this.elementType.isStrict
   }
 
-  validateValue (value, context) {
-    return Promise.all((value || []).map(v => this.elementType.validateValue(v, context))).then(validArray => {
-      return (validArray || []).filter(isValid => !isValid).length === 0
-    })
+  async validateValue (value, context) {
+    const validArray = await Promise.all((value || []).map(v => this.elementType.validateValue(v, context)))
+    return (validArray || []).filter(isValid => !isValid).length === 0
   }
 
   buildInvalidMessage (context, msgAndArgs) {

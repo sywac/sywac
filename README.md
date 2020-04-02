@@ -38,20 +38,23 @@ Then create a `cli.js` file with code similar to this:
 
 ```js
 #!/usr/bin/env node
-'use strict'
 
-require('sywac')
-  .positional('<string>', { paramsDesc: 'A required string argument' })
-  .boolean('-b, --bool', { desc: 'A boolean option' })
-  .number('-n, --num <number>', { desc: 'A number option' })
-  .help('-h, --help')
-  .version('-v, --version')
-  .showHelpByDefault()
-  .outputSettings({ maxWidth: 75 })
-  .parseAndExit()
-  .then(argv => {
-    console.log(JSON.stringify(argv, null, 2))
-  })
+const sywac = require('sywac')
+
+async function main () {
+  const argv = await sywac
+    .positional('<string>', { paramsDesc: 'A required string argument' })
+    .boolean('-b, --bool', { desc: 'A boolean option' })
+    .number('-n, --num <number>', { desc: 'A number option' })
+    .help('-h, --help')
+    .version('-v, --version')
+    .showHelpByDefault()
+    .outputSettings({ maxWidth: 75 })
+    .parseAndExit()
+  console.log(JSON.stringify(argv, null, 2))
+}
+
+main()
 ```
 
 Make the `cli.js` file executable:
