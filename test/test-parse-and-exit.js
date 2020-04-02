@@ -62,191 +62,180 @@ function exec (args) {
   })
 }
 
-tap.test('parseAndExit > help', t => {
+tap.test('parseAndExit > help', async t => {
   const promises = []
 
-  promises.push(exec('--help').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, topLevelHelp[index])
-    })
-  }))
+  promises.push(exec('--help'))
+  promises.push(exec('help'))
+  promises.push(exec(''))
+  promises.push(exec('help build'))
+  promises.push(exec('build -h'))
+  promises.push(exec('--help build'))
 
-  promises.push(exec('help').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, topLevelHelp[index])
-    })
-  }))
+  const [io1, io2, io3, io4, io5, io6] = await Promise.all(promises)
 
-  promises.push(exec('').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, topLevelHelp[index])
-    })
-  }))
+  t.notOk(io1.error)
+  t.notOk(io1.stderr)
+  let lines = io1.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, topLevelHelp[index])
+  })
 
-  promises.push(exec('help build').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, buildCommandHelp[index])
-    })
-  }))
+  t.notOk(io2.error)
+  t.notOk(io2.stderr)
+  lines = io2.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, topLevelHelp[index])
+  })
 
-  promises.push(exec('build -h').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, buildCommandHelp[index])
-    })
-  }))
+  t.notOk(io3.error)
+  t.notOk(io3.stderr)
+  lines = io3.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, topLevelHelp[index])
+  })
 
-  promises.push(exec('--help build').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, buildCommandHelp[index])
-    })
-  }))
+  t.notOk(io4.error)
+  t.notOk(io4.stderr)
+  lines = io4.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, buildCommandHelp[index])
+  })
 
-  return Promise.all(promises)
-})
+  t.notOk(io5.error)
+  t.notOk(io5.stderr)
+  lines = io5.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, buildCommandHelp[index])
+  })
 
-tap.test('parseAndExit > version', t => {
-  const promises = []
-
-  promises.push(exec('version').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    t.same(io.stdout.trim(), '2.3.4')
-  }))
-
-  promises.push(exec('-v').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    t.same(io.stdout.trim(), '2.3.4')
-  }))
-
-  promises.push(exec('build --version').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    t.same(io.stdout.trim(), '2.3.4')
-  }))
-
-  return Promise.all(promises)
-})
-
-tap.test('parseAndExit > validation failure', t => {
-  const promises = []
-
-  promises.push(exec('build').then(io => {
-    t.ok(io.error)
-    t.same(io.error.code, 2)
-    t.notOk(io.stderr)
-    const expected = buildCommandHelp.slice()
-    expected[2] = chalk.red('Build Arguments:')
-    expected[3] = '  ' + chalk.red('<services..>') + '        ' + chalk.red('One or more services to build')
-    expected[4] = '                      ' + chalk.red('[required] [array:enum] [web, api, db]')
-    expected[9] = chalk.red('Repo Options:')
-    expected[10] = '  ' + chalk.red('-b, -branch <branch>') + '  ' + chalk.red('The branch to pull') + '                             ' + chalk.red('[required] [string]')
-    expected.push(chalk.red('Missing required argument: b or branch'))
-    expected.push(chalk.red('Missing required argument: services'))
-    expected.push('')
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, expected[index])
-    })
-  }))
-
-  promises.push(exec('build web docs -b master').then(io => {
-    t.ok(io.error)
-    t.same(io.error.code, 1)
-    t.notOk(io.stderr)
-    const expected = buildCommandHelp.slice()
-    expected[2] = chalk.red('Build Arguments:')
-    expected[3] = '  ' + chalk.red('<services..>') + '        ' + chalk.red('One or more services to build')
-    expected[4] = '                      ' + chalk.red('[required] [array:enum] [web, api, db]')
-    expected.push(chalk.red('Value "web,docs" is invalid for argument services. Choices are: web, api, db'))
-    expected.push('')
-    const lines = io.stdout.split('\n')
-    lines.forEach((line, index) => {
-      t.equal(line, expected[index])
-    })
-  }))
-
-  return Promise.all(promises)
-})
-
-tap.test('parseAndExit > unexpected error', t => {
-  return exec('release').then(io => {
-    t.ok(io.error)
-    t.same(io.error.code, 1)
-    t.notOk(io.stderr)
-    t.match(io.stdout, /This is an unexpected error/)
+  t.notOk(io6.error)
+  t.notOk(io6.stderr)
+  lines = io6.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, buildCommandHelp[index])
   })
 })
 
-tap.test('parseAndExit > success', t => {
+tap.test('parseAndExit > version', async t => {
   const promises = []
 
-  promises.push(exec('env').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const argv = JSON.parse(io.stdout)
-    t.equal(argv.envCalled, true)
-  }))
+  promises.push(exec('version'))
+  promises.push(exec('-v'))
+  promises.push(exec('build --version'))
 
-  promises.push(exec('build -b master db api --tag 1.0.0 latest').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const argv = JSON.parse(io.stdout)
-    t.equal(argv.buildCalled, true)
-    t.same(argv.services, ['db', 'api'])
-    t.equal(argv.b, 'master')
-    t.equal(argv.branch, 'master')
-    t.same(argv._, [])
-    t.same(argv.t, ['1.0.0', 'latest'])
-    t.same(argv.tag, ['1.0.0', 'latest'])
-    t.equal(argv.r, 'localhost')
-    t.equal(argv.remote, 'localhost')
-    t.equal(argv.p, '/opt/repo')
-    t.equal(argv.path, '/opt/repo')
-    t.equal(argv.u, 'admin')
-    t.equal(argv.user, 'admin')
-    t.equal(argv.i, '~/.ssh/id_rsa')
-    t.equal(argv.identity, '~/.ssh/id_rsa')
-  }))
+  const [io1, io2, io3] = await Promise.all(promises)
 
-  promises.push(exec('-b master build db api -t=1.0.0,latest -- x').then(io => {
-    t.notOk(io.error)
-    t.notOk(io.stderr)
-    const argv = JSON.parse(io.stdout)
-    t.equal(argv.buildCalled, true)
-    t.same(argv.services, ['db', 'api'])
-    t.equal(argv.b, 'master')
-    t.equal(argv.branch, 'master')
-    t.same(argv._, ['--', 'x'])
-    t.same(argv.t, ['1.0.0', 'latest'])
-    t.same(argv.tag, ['1.0.0', 'latest'])
-    t.equal(argv.r, 'localhost')
-    t.equal(argv.remote, 'localhost')
-    t.equal(argv.p, '/opt/repo')
-    t.equal(argv.path, '/opt/repo')
-    t.equal(argv.u, 'admin')
-    t.equal(argv.user, 'admin')
-    t.equal(argv.i, '~/.ssh/id_rsa')
-    t.equal(argv.identity, '~/.ssh/id_rsa')
-  }))
+  t.notOk(io1.error)
+  t.notOk(io1.stderr)
+  t.same(io1.stdout.trim(), '2.3.4')
 
-  return Promise.all(promises)
+  t.notOk(io2.error)
+  t.notOk(io2.stderr)
+  t.same(io2.stdout.trim(), '2.3.4')
+
+  t.notOk(io3.error)
+  t.notOk(io3.stderr)
+  t.same(io3.stdout.trim(), '2.3.4')
+})
+
+tap.test('parseAndExit > validation failure', async t => {
+  const promises = []
+
+  promises.push(exec('build'))
+  promises.push(exec('build web docs -b master'))
+
+  const [io1, io2] = await Promise.all(promises)
+
+  t.ok(io1.error)
+  t.same(io1.error.code, 2)
+  t.notOk(io1.stderr)
+  let expected = buildCommandHelp.slice()
+  expected[2] = chalk.red('Build Arguments:')
+  expected[3] = '  ' + chalk.red('<services..>') + '        ' + chalk.red('One or more services to build')
+  expected[4] = '                      ' + chalk.red('[required] [array:enum] [web, api, db]')
+  expected[9] = chalk.red('Repo Options:')
+  expected[10] = '  ' + chalk.red('-b, -branch <branch>') + '  ' + chalk.red('The branch to pull') + '                             ' + chalk.red('[required] [string]')
+  expected.push(chalk.red('Missing required argument: b or branch'))
+  expected.push(chalk.red('Missing required argument: services'))
+  expected.push('')
+  let lines = io1.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, expected[index])
+  })
+
+  t.ok(io2.error)
+  t.same(io2.error.code, 1)
+  t.notOk(io2.stderr)
+  expected = buildCommandHelp.slice()
+  expected[2] = chalk.red('Build Arguments:')
+  expected[3] = '  ' + chalk.red('<services..>') + '        ' + chalk.red('One or more services to build')
+  expected[4] = '                      ' + chalk.red('[required] [array:enum] [web, api, db]')
+  expected.push(chalk.red('Value "web,docs" is invalid for argument services. Choices are: web, api, db'))
+  expected.push('')
+  lines = io2.stdout.split('\n')
+  lines.forEach((line, index) => {
+    t.equal(line, expected[index])
+  })
+})
+
+tap.test('parseAndExit > unexpected error', async t => {
+  const io = await exec('release')
+  t.ok(io.error)
+  t.same(io.error.code, 1)
+  t.notOk(io.stderr)
+  t.match(io.stdout, /This is an unexpected error/)
+})
+
+tap.test('parseAndExit > success', async t => {
+  const promises = []
+
+  promises.push(exec('env'))
+  promises.push(exec('build -b master db api --tag 1.0.0 latest'))
+  promises.push(exec('-b master build db api -t=1.0.0,latest -- x'))
+
+  const [io1, io2, io3] = await Promise.all(promises)
+
+  t.notOk(io1.error)
+  t.notOk(io1.stderr)
+  let argv = JSON.parse(io1.stdout)
+  t.equal(argv.envCalled, true)
+
+  t.notOk(io2.error)
+  t.notOk(io2.stderr)
+  argv = JSON.parse(io2.stdout)
+  t.equal(argv.buildCalled, true)
+  t.same(argv.services, ['db', 'api'])
+  t.equal(argv.b, 'master')
+  t.equal(argv.branch, 'master')
+  t.same(argv._, [])
+  t.same(argv.t, ['1.0.0', 'latest'])
+  t.same(argv.tag, ['1.0.0', 'latest'])
+  t.equal(argv.r, 'localhost')
+  t.equal(argv.remote, 'localhost')
+  t.equal(argv.p, '/opt/repo')
+  t.equal(argv.path, '/opt/repo')
+  t.equal(argv.u, 'admin')
+  t.equal(argv.user, 'admin')
+  t.equal(argv.i, '~/.ssh/id_rsa')
+  t.equal(argv.identity, '~/.ssh/id_rsa')
+
+  t.notOk(io3.error)
+  t.notOk(io3.stderr)
+  argv = JSON.parse(io3.stdout)
+  t.equal(argv.buildCalled, true)
+  t.same(argv.services, ['db', 'api'])
+  t.equal(argv.b, 'master')
+  t.equal(argv.branch, 'master')
+  t.same(argv._, ['--', 'x'])
+  t.same(argv.t, ['1.0.0', 'latest'])
+  t.same(argv.tag, ['1.0.0', 'latest'])
+  t.equal(argv.r, 'localhost')
+  t.equal(argv.remote, 'localhost')
+  t.equal(argv.p, '/opt/repo')
+  t.equal(argv.path, '/opt/repo')
+  t.equal(argv.u, 'admin')
+  t.equal(argv.user, 'admin')
+  t.equal(argv.i, '~/.ssh/id_rsa')
+  t.equal(argv.identity, '~/.ssh/id_rsa')
 })
