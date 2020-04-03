@@ -37,6 +37,14 @@ class TypeCommand extends Type {
     return target
   }
 
+  // if user requests help or a `setup` or `run` callback generates CLI messages,
+  // we need to initialize the help buffer in the context of this command.
+  _initPossibleHelpBuffer (context) {
+    const result = context.helpRequested || context.messages.length
+    if (result && !context.output) context.addDeferredHelp(this.api.initHelpBuffer())
+    return result
+  }
+
   get needsApi () {
     return !this._api
   }
@@ -124,12 +132,13 @@ class TypeCommand extends Type {
     if (context.commandHandlerRun) return this.resolve()
     context.commandHandlerRun = true
     this.api.addStrictModeErrors(context)
-    if (context.helpRequested || context.messages.length) {
-      // console.log('command.js postParse > adding deferred help, implicit:', match.implicit)
-      if (!context.output) context.addDeferredHelp(this.api.initHelpBuffer())
+    if (this._initPossibleHelpBuffer(context)) {
       return this.resolve()
     }
-    return this.runHandler(context.argv, context)
+    return Promise.resolve(this.runHandler(context.argv, context)).then(result => {
+      this._initPossibleHelpBuffer(context)
+      return result
+    })
   }
 }
 

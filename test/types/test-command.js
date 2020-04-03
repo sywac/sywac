@@ -553,7 +553,11 @@ tap.test('command > run handler > adding cli message affects result', async t =>
     })
     .parse('fail')
   t.equal(result.code, 1)
-  t.match(result.output, /You broke it/)
+  t.equal(result.output, [
+    'Usage: test-command fail',
+    '',
+    'You broke it'
+  ].join('\n'))
   t.equal(result.errors.length, 0)
 })
 
