@@ -132,13 +132,11 @@ class TypeCommand extends Type {
     if (context.commandHandlerRun) return this.resolve()
     context.commandHandlerRun = true
     this.api.addStrictModeErrors(context)
-    if (this._initPossibleHelpBuffer(context)) {
-      return this.resolve()
-    }
-    return Promise.resolve(this.runHandler(context.argv, context)).then(result => {
-      this._initPossibleHelpBuffer(context)
-      return result
-    })
+    if (this._initPossibleHelpBuffer(context)) return this.resolve()
+
+    const result = await this.runHandler(context.argv, context)
+    this._initPossibleHelpBuffer(context)
+    return result
   }
 }
 
