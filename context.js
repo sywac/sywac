@@ -32,6 +32,7 @@ class Context {
     // other
     this.commandHandlerRun = false
     this.helpRequested = false
+    this.helpRequestedImplicitly = false
     this.versionRequested = false
   }
 
@@ -149,7 +150,7 @@ class Context {
   cliMessage (msg) {
     // do NOT modify this.code here - the messages will be disregarded if help is requested
     const argsLen = arguments.length
-    const args = new Array(argsLen - 1)
+    const args = new Array((argsLen || 1) - 1)
     for (let i = 0; i < argsLen; ++i) {
       args[i] = arguments[i]
       // if any args are an array, join into string
@@ -199,6 +200,11 @@ class Context {
     return this
   }
 
+  deferImplicitHelp () {
+    this.helpRequestedImplicitly = true
+    return this
+  }
+
   addDeferredHelp (helpBuffer) {
     const groups = {}
     const mappedLevels = Object.keys(this.types)
@@ -206,14 +212,14 @@ class Context {
       currentLevel = mappedLevels[i]
       ;(this.types[currentLevel] || []).forEach(type => {
         if (currentLevel === helpBuffer._usageName || type.datatype !== 'command') {
-          if (this.helpRequested) type.invalid = false
+          if (this.helpRequested || this.helpRequestedImplicitly) type.invalid = false
           groups[type.helpGroup] = (groups[type.helpGroup] || []).concat(type)
         }
       })
     }
     helpBuffer.groups = groups
 
-    if (!this.helpRequested) {
+    if (!this.helpRequested && !this.helpRequestedImplicitly) {
       helpBuffer.messages = this.messages
       this.code += this.messages.length
     }

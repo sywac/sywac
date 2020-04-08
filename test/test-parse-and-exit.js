@@ -67,7 +67,7 @@ tap.test('parseAndExit > help', async t => {
 
   promises.push(exec('--help'))
   promises.push(exec('help'))
-  promises.push(exec(''))
+  promises.push(exec('')) // this goes to stderr, all others go to stdout
   promises.push(exec('help build'))
   promises.push(exec('build -h'))
   promises.push(exec('--help build'))
@@ -89,8 +89,8 @@ tap.test('parseAndExit > help', async t => {
   })
 
   t.notOk(io3.error)
-  t.notOk(io3.stderr)
-  lines = io3.stdout.split('\n')
+  t.notOk(io3.stdout)
+  lines = io3.stderr.split('\n')
   lines.forEach((line, index) => {
     t.equal(line, topLevelHelp[index])
   })
