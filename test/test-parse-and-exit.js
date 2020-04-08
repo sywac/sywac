@@ -67,7 +67,7 @@ tap.test('parseAndExit > help', async t => {
 
   promises.push(exec('--help'))
   promises.push(exec('help'))
-  promises.push(exec(''))
+  promises.push(exec('')) // this goes to stderr, all others go to stdout
   promises.push(exec('help build'))
   promises.push(exec('build -h'))
   promises.push(exec('--help build'))
@@ -89,8 +89,8 @@ tap.test('parseAndExit > help', async t => {
   })
 
   t.notOk(io3.error)
-  t.notOk(io3.stderr)
-  lines = io3.stdout.split('\n')
+  t.notOk(io3.stdout)
+  lines = io3.stderr.split('\n')
   lines.forEach((line, index) => {
     t.equal(line, topLevelHelp[index])
   })
@@ -149,7 +149,7 @@ tap.test('parseAndExit > validation failure', async t => {
 
   t.ok(io1.error)
   t.same(io1.error.code, 2)
-  t.notOk(io1.stderr)
+  t.notOk(io1.stdout)
   let expected = buildCommandHelp.slice()
   expected[2] = chalk.red('Build Arguments:')
   expected[3] = '  ' + chalk.red('<services..>') + '        ' + chalk.red('One or more services to build')
@@ -159,21 +159,21 @@ tap.test('parseAndExit > validation failure', async t => {
   expected.push(chalk.red('Missing required argument: b or branch'))
   expected.push(chalk.red('Missing required argument: services'))
   expected.push('')
-  let lines = io1.stdout.split('\n')
+  let lines = io1.stderr.split('\n')
   lines.forEach((line, index) => {
     t.equal(line, expected[index])
   })
 
   t.ok(io2.error)
   t.same(io2.error.code, 1)
-  t.notOk(io2.stderr)
+  t.notOk(io2.stdout)
   expected = buildCommandHelp.slice()
   expected[2] = chalk.red('Build Arguments:')
   expected[3] = '  ' + chalk.red('<services..>') + '        ' + chalk.red('One or more services to build')
   expected[4] = '                      ' + chalk.red('[required] [array:enum] [web, api, db]')
   expected.push(chalk.red('Value "web,docs" is invalid for argument services. Choices are: web, api, db'))
   expected.push('')
-  lines = io2.stdout.split('\n')
+  lines = io2.stderr.split('\n')
   lines.forEach((line, index) => {
     t.equal(line, expected[index])
   })
@@ -183,8 +183,8 @@ tap.test('parseAndExit > unexpected error', async t => {
   const io = await exec('release')
   t.ok(io.error)
   t.same(io.error.code, 1)
-  t.notOk(io.stderr)
-  t.match(io.stdout, /This is an unexpected error/)
+  t.notOk(io.stdout)
+  t.match(io.stderr, /This is an unexpected error/)
 })
 
 tap.test('parseAndExit > success', async t => {

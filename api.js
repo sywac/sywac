@@ -592,9 +592,12 @@ class Api {
   // parse and exit if there's output (e.g. help text) or a non-zero code; otherwise resolves to argv
   // useful for standard CLIs
   async parseAndExit (args) {
-    const result = await this.parse(args)
+    const context = await this._parse(args)
+    const result = context.toResult()
     if (result.output) {
-      console.log(result.output) // TODO
+      // note that we want context.helpRequestedImplicitly to output to stderr, not stdout
+      const level = ((context.helpRequested || context.versionRequested) && result.code === 0) ? 'log' : 'error'
+      console[level](result.output)
       process.exit(result.code)
     }
     if (result.code !== 0) process.exit(result.code)
@@ -604,6 +607,11 @@ class Api {
   // parse and resolve to a context result (never exits)
   // useful for chatbots or checking results
   async parse (args) {
+    const context = await this._parse(args)
+    return context.toResult()
+  }
+
+  async _parse (args) {
     // init context and kick off recursive type parsing/execution
     const context = this.initContext(false).slurpArgs(args)
 
@@ -613,7 +621,10 @@ class Api {
       this.unknownType.applySource(context, SOURCE_DEFAULT)
     }
 
-    if (this._showHelpByDefault && !context.details.args.length) context.deferHelp() // preemptively request help
+    if (this._showHelpByDefault && !context.details.args.length) {
+      // preemptively request help (to stderr)
+      context.deferImplicitHelp()
+    }
 
     try {
       await this.parseFromContext(context)
@@ -622,7 +633,7 @@ class Api {
         this.addStrictModeErrors(context)
       }
 
-      if (context.helpRequested && !context.output) {
+      if ((context.helpRequested || context.helpRequestedImplicitly) && !context.output) {
         context.addDeferredHelp(this.initHelpBuffer())
       } else if (context.versionRequested && !context.output) {
         context.addDeferredVersion()
@@ -633,7 +644,7 @@ class Api {
       context.unexpectedError(err)
     }
 
-    return context.toResult()
+    return context
   }
 
   // recursive, meant to be used internally
@@ -655,7 +666,7 @@ class Api {
     if (!this._magicCommandAdded && this._showHelpByDefault && hasCommands && !hasDefaultCommand) {
       this._magicCommandAdded = true
       this._internalCommand(Api.DEFAULT_COMMAND_INDICATOR, (argv, context) => {
-        context.deferHelp().addDeferredHelp(this.initHelpBuffer())
+        context.deferImplicitHelp().addDeferredHelp(this.initHelpBuffer())
       }).configure({ api: this.newChild(Api.DEFAULT_COMMAND_INDICATOR, { strictMode: false }) }, false)
     }
 
@@ -722,6 +733,7 @@ class Api {
   // basically, we don't want to run the custom check handler if help text or version will be output
   shouldCoerceAndCheck (context) {
     return !context.helpRequested &&
+      !context.helpRequestedImplicitly &&
       !context.versionRequested &&
       !(context.messages && context.messages.length) &&
       (!this._magicCommandAdded || context.explicitCommandMatch(this.name))
