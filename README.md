@@ -2,10 +2,10 @@
 
 > So you want a CLI...
 
-[![Build Status](https://travis-ci.org/sywac/sywac.svg?branch=master)](https://travis-ci.org/sywac/sywac)
+[![Build Status](https://travis-ci.com/sywac/sywac.svg?branch=master)](https://travis-ci.com/sywac/sywac)
 [![Coverage Status](https://coveralls.io/repos/github/sywac/sywac/badge.svg?branch=master)](https://coveralls.io/github/sywac/sywac?branch=master)
-[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-[![Greenkeeper badge](https://badges.greenkeeper.io/sywac/sywac.svg)](https://greenkeeper.io/)
+[![JavaScript Style Guide](https://badgen.net/badge/code%20style/standard/green)](https://standardjs.com)
+![Dependabot Badge](https://badgen.net/dependabot/sywac/sywac?icon=dependabot)
 
 A better CLI framework, made for the ES2015 era.
 
