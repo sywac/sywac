@@ -9,7 +9,7 @@
 
 A better CLI framework, made for the ES2015 era.
 
-Visit http://sywac.io for detailed documentation. **NOTE!** The docs site is still under construction.
+Visit https://sywac.io for detailed documentation. **NOTE!** The docs site is still under construction.
 
 ## Feature Highlights
 

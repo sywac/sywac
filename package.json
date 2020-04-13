@@ -32,7 +32,7 @@
   "bugs": {
     "url": "https://github.com/sywac/sywac/issues"
   },
-  "homepage": "http://sywac.io",
+  "homepage": "https://sywac.io",
   "devDependencies": {
     "chalk": "^4.0.0",
     "coveralls": "^3.0.9",
