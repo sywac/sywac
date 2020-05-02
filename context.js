@@ -140,9 +140,9 @@ class Context {
     return this
   }
 
-  unexpectedError (err) {
+  unexpectedError (err, formatted) {
     this.errors.push(err)
-    this.output = String((err && err.stack) || err)
+    this.output = formatted || String((err && err.stack) || err)
     this.code++
   }
 

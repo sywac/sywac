@@ -82,7 +82,7 @@ class Api {
       'lineSep', 'sectionSep', 'pad', 'indent', 'split', 'icon', 'slogan',
       'usagePrefix', 'usageHasOptions', 'groupOrder', 'epilogue', 'maxWidth',
       'examplePrefix', 'exampleOrder', 'usageCommandPlaceholder',
-      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'showHelpOnError',
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'showHelpOnError', 'errorFormat',
       'styleGroup', 'styleGroupError', 'styleFlags', 'styleFlagsError',
       'styleDesc', 'styleDescError', 'styleHints', 'styleHintsError', 'styleMessages',
       'styleUsagePrefix', 'styleUsagePositionals', 'styleUsageCommandPlaceholder',
@@ -255,6 +255,11 @@ class Api {
 
   epilogue (epilogue) {
     this.helpOpts.epilogue = epilogue
+    return this
+  }
+
+  errorFormat(fn) {
+    this.helpOpts.errorFormat = fn
     return this
   }
 
@@ -630,7 +635,7 @@ class Api {
         context.addDeferredHelp(this.initHelpBuffer())
       }
     } catch (err) {
-      context.unexpectedError(err)
+      context.unexpectedError(err, this.helpOpts.errorFormat ? this.helpOpts.errorFormat(err) : undefined)
     }
 
     return context.toResult()
