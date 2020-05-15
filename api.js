@@ -591,8 +591,8 @@ class Api {
 
   // parse and exit if there's output (e.g. help text) or a non-zero code; otherwise resolves to argv
   // useful for standard CLIs
-  async parseAndExit (args) {
-    const context = await this._parse(args)
+  async parseAndExit (args, userContext) {
+    const context = await this._parse(args, userContext)
     const result = context.toResult()
     if (result.output) {
       // note that we want context.helpRequestedImplicitly to output to stderr, not stdout
@@ -606,14 +606,17 @@ class Api {
 
   // parse and resolve to a context result (never exits)
   // useful for chatbots or checking results
-  async parse (args) {
-    const context = await this._parse(args)
+  async parse (args, userContext) {
+    const context = await this._parse(args, userContext)
     return context.toResult()
   }
 
-  async _parse (args) {
+  async _parse (args, userContext) {
     // init context and kick off recursive type parsing/execution
     const context = this.initContext(false).slurpArgs(args)
+    if (typeof userContext !== "undefined") {
+      context.argv.$ = userContext
+    }
 
     // init unknownType in context only for the top-level (all levels share/overwrite the same argv._)
     if (this.unknownType) {
@@ -709,7 +712,7 @@ class Api {
     const context = this.get('_context', {
       utils: this.utils,
       pathLib: this.pathLib,
-      fsLib: this.fsLib
+      fsLib: this.fsLib,
     })
     return includeTypes ? this.applyTypes(context) : context
   }

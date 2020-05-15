@@ -410,3 +410,18 @@ tap.test('parse > custom async check', async t => {
   t.equal(called, 4)
   t.equal(result.argv.looksGood, true)
 })
+
+tap.test('parse > user context', async t => {
+  const api = Api.get()
+  const userContext = { name: 'jan.jansen', home: '/Users/jan' }
+
+  let result = await api.parse('-x Hello', userContext)
+  t.equal(result.code, 0)
+  t.equal(result.argv.x, 'Hello')
+  t.equal(result.argv.$, userContext)
+
+  result = await api.parse('-x Hello')
+  t.equal(result.code, 0)
+  t.equal(result.argv.x, 'Hello')
+  t.equal(Object.keys(result.argv).indexOf('$'), -1)
+})
