@@ -241,15 +241,16 @@ tap.test('parseAndExit > success', async t => {
   t.equal(argv.identity, '~/.ssh/id_rsa')
 })
 
-tap.test('parseAndExit > user context', async t => {
-  const api = Api.get()
-  const userContext = { name: 'jan.jansen', home: '/Users/jan' }
+tap.test('parseAndExit > state', async t => {
+  const state = { name: 'jan.jansen', home: '/Users/jan' }
+  let _context
+  const api = Api.get().check((argv, context) => { _context = context })
 
-  let argv = await api.parseAndExit('-x Hello', userContext)
+  let argv = await api.parseAndExit('-x Hello', state)
   t.equal(argv.x, 'Hello')
-  t.equal(argv.$, userContext)
+  t.equal(_context.state, state)
 
   argv = await api.parseAndExit('-x Hello')
   t.equal(argv.x, 'Hello')
-  t.equal(Object.keys(argv).indexOf('$'), -1)
+  t.equal(_context.state, undefined)
 })
