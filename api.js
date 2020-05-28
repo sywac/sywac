@@ -710,7 +710,7 @@ class Api {
       utils: this.utils,
       pathLib: this.pathLib,
       fsLib: this.fsLib,
-      state: state
+      state
     })
     return includeTypes ? this.applyTypes(context) : context
   }
