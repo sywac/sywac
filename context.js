@@ -14,6 +14,7 @@ class Context {
     this._pathLib = opts.pathLib
     this._fsLib = opts.fsLib
     // config
+    this.state = opts.state
     this.types = {}
     // args to parse per type
     this.args = []

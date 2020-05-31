@@ -70,7 +70,6 @@ tap.test('api > help text', t => {
     'epilogue'
   ].join('\n'))
   t.same(includeExamples, true)
-
   t.end()
 })
 
@@ -103,6 +102,24 @@ tap.test('api > custom helpBuffer', t => {
     .registerFactory('helpBuffer', () => ({ toString: () => 'Complete override' }))
     .getHelp()
   t.same(helpText, 'Complete override')
+  t.end()
+})
+
+tap.test('api > help configuration functions ignore or massage invalid params', t => {
+  const helpText = Api.get()
+    .usage()
+    .groupOrder({ value: 'ignored' })
+    .example()
+    .exampleOrder({ value: 'ignored' })
+    .outputSettings()
+    .style()
+    .registerFactory()
+    .getHelp()
+  t.equal(helpText, [
+    'Usage: test-api',
+    '',
+    'Examples:'
+  ].join('\n'))
   t.end()
 })
 

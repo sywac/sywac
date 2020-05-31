@@ -4,6 +4,7 @@ const tap = require('tap')
 const cp = require('child_process')
 const path = require('path')
 const chalk = require('chalk')
+const Api = require('../api')
 
 const topLevelHelp = [
   chalk`{white Usage:} {magenta ndb}` + ' ' + chalk.magenta('<command>') + ' ' + chalk.yellow('<args>') + ' ' + chalk.green('[options]'),
@@ -238,4 +239,18 @@ tap.test('parseAndExit > success', async t => {
   t.equal(argv.user, 'admin')
   t.equal(argv.i, '~/.ssh/id_rsa')
   t.equal(argv.identity, '~/.ssh/id_rsa')
+})
+
+tap.test('parseAndExit > state', async t => {
+  const state = { name: 'jan.jansen', home: '/Users/jan' }
+  let _context
+  const api = Api.get().check((argv, context) => { _context = context })
+
+  let argv = await api.parseAndExit('-x Hello', state)
+  t.equal(argv.x, 'Hello')
+  t.equal(_context.state, state)
+
+  argv = await api.parseAndExit('-x Hello')
+  t.equal(argv.x, 'Hello')
+  t.equal(_context.state, undefined)
 })
