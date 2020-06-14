@@ -222,6 +222,38 @@ tap.test('api > attempt to get unmapped type returns null (don\'t do this)', t =
   t.end()
 })
 
+tap.test('api > unexpectedErrorFormatter customizes error output', async t => {
+  // Standard formatting
+  const error = new Error('An Error')
+  const api = Api.get().check(() => { throw error })
+  const result1 = await api.parse()
+  t.equal(result1.output, error.stack)
+
+  // Customized formatting
+  api.unexpectedErrorFormatter(error => `Oops, ${error.message} Happened`)
+  const result2 = await api.parse()
+  t.equal(result2.output, 'Oops, An Error Happened')
+
+  t.end()
+})
+
+tap.test('api > style > unexpectedError styles error output', async t => {
+  // Standard styling
+  const error = new Error('An Error')
+  const api = Api.get()
+    .unexpectedErrorFormatter(error => error.message)
+    .check(() => { throw error })
+  const result1 = await api.parse()
+  t.equal(result1.output, 'An Error')
+
+  // Customized styling
+  api.style({ unexpectedError: str => `[[${str}]]` })
+  const result2 = await api.parse()
+  t.equal(result2.output, '[[An Error]]')
+
+  t.end()
+})
+
 tap.test('api > custom path and fs libs', async t => {
   class FakePath {
     // used by api

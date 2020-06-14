@@ -15,6 +15,8 @@ class Context {
     this._fsLib = opts.fsLib
     // config
     this.state = opts.state
+    this.errorFormatter = opts.errorFormatter
+    this.styleUnexpectedError = opts.styleUnexpectedError
     this.types = {}
     // args to parse per type
     this.args = []
@@ -144,7 +146,12 @@ class Context {
 
   unexpectedError (err) {
     this.errors.push(err)
-    this.output = String((err && err.stack) || err)
+    const message = typeof this.errorFormatter === 'function'
+      ? String(this.errorFormatter(err))
+      : String((err && err.stack) || err)
+    this.output = typeof this.styleUnexpectedError === 'function'
+      ? this.styleUnexpectedError(message)
+      : message
     this.code++
   }
 

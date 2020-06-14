@@ -40,6 +40,7 @@ class Api {
     this._strictMode = 'strictMode' in opts ? opts.strictMode : false
     this._magicCommandAdded = false
     this._modulesSeen = opts.modulesSeen || []
+    this._errorFormatter = undefined
     this.configure(opts)
     if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
   }
@@ -87,7 +88,7 @@ class Api {
       'styleDesc', 'styleDescError', 'styleHints', 'styleHintsError', 'styleMessages',
       'styleUsagePrefix', 'styleUsagePositionals', 'styleUsageCommandPlaceholder',
       'styleUsageArgsPlaceholder', 'styleUsageOptionsPlaceholder', 'styleExample',
-      'styleAll'
+      'styleUnexpectedError', 'styleAll'
     ].forEach(opt => {
       if (opt in source) target[opt] = source[opt]
     })
@@ -258,6 +259,11 @@ class Api {
     return this
   }
 
+  unexpectedErrorFormatter (fn) {
+    this._errorFormatter = fn
+    return this
+  }
+
   outputSettings (settings) {
     if (!settings) return this
     ;['lineSep', 'sectionSep', 'pad', 'indent', 'split', 'maxWidth', 'examplePrefix', 'showHelpOnError'].forEach(opt => {
@@ -271,7 +277,7 @@ class Api {
     ;[
       'group', 'groupError', 'flags', 'flagsError', 'desc', 'descError', 'hints',
       'hintsError', 'messages', 'usagePrefix', 'usagePositionals', 'usageCommandPlaceholder',
-      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'example', 'all'
+      'usageArgsPlaceholder', 'usageOptionsPlaceholder', 'example', 'unexpectedError', 'all'
     ].forEach(key => {
       if (typeof hooks[key] === 'function') {
         const helpOptsKey = 'style' + key[0].toUpperCase() + key.slice(1)
@@ -710,7 +716,14 @@ class Api {
       utils: this.utils,
       pathLib: this.pathLib,
       fsLib: this.fsLib,
-      state
+      errorFormatter: this._errorFormatter,
+      state,
+
+      // Pass all help options (styling) down to the Context constructor. For the most
+      // part, these options will be ignored, as the Context usually does not care about
+      // styling - but it will pick up individual options if appropriate (such as
+      // `styleUnexpectedError` if there is unexpected error).
+      ...this.helpOpts
     })
     return includeTypes ? this.applyTypes(context) : context
   }
