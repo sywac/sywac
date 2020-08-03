@@ -254,6 +254,22 @@ tap.test('api > style > unexpectedError styles error output', async t => {
   t.end()
 })
 
+tap.test('api > style > unexpectedError styles error output from subcommands', async t => {
+  // Custom styling and formatting, for good measure
+  const error = new Error('An Error')
+  const api = Api.get()
+    .unexpectedErrorFormatter(error => `(message: ${error.message})`)
+    .style({ unexpectedError: str => `(style: ${str})` })
+    .command('start', {
+      run: () => { throw error }
+    })
+
+  const result = await api.parse('start')
+  t.equal(result.output, '(style: (message: An Error))')
+
+  t.end()
+})
+
 tap.test('api > custom path and fs libs', async t => {
   class FakePath {
     // used by api

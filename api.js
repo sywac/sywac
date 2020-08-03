@@ -40,7 +40,6 @@ class Api {
     this._strictMode = 'strictMode' in opts ? opts.strictMode : false
     this._magicCommandAdded = false
     this._modulesSeen = opts.modulesSeen || []
-    this._errorFormatter = undefined
     this.configure(opts)
     if (!Api.ROOT_NAME) Api.ROOT_NAME = this.name
   }
@@ -60,6 +59,7 @@ class Api {
     // other
     this._name = opts.name || this._name
     this._parentName = opts.parentName || this._parentName // TODO this seems awfully hacky
+    this._unexpectedErrorFormatter = opts.unexpectedErrorFormatter || this._unexpectedErrorFormatter
     return this
   }
 
@@ -260,7 +260,7 @@ class Api {
   }
 
   unexpectedErrorFormatter (fn) {
-    this._errorFormatter = fn
+    this._unexpectedErrorFormatter = fn
     return this
   }
 
@@ -716,14 +716,14 @@ class Api {
       utils: this.utils,
       pathLib: this.pathLib,
       fsLib: this.fsLib,
-      errorFormatter: this._errorFormatter,
+      unexpectedErrorFormatter: this._unexpectedErrorFormatter,
       state,
 
       // Pass all help options (styling) down to the Context constructor. For the most
       // part, these options will be ignored, as the Context usually does not care about
       // styling - but it will pick up individual options if appropriate (such as
       // `styleUnexpectedError` if there is unexpected error).
-      ...this.helpOpts
+      helpOpts: this.helpOpts
     })
     return includeTypes ? this.applyTypes(context) : context
   }
