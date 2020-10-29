@@ -38,7 +38,7 @@
     "coveralls": "^3.0.9",
     "del": "^5.1.0",
     "import-fresh": "^3.2.1",
-    "standard": "^14.3.2",
+    "standard": "^16.0.0",
     "tap": "^14.10.6"
   }
 }
