@@ -305,7 +305,7 @@ class Api {
   }
 
   // complex types
-  commandDirectory (dir, opts) {
+  async commandDirectory (dir, opts) {
     if (typeof dir === 'object') {
       opts = dir
       dir = ''
@@ -323,11 +323,12 @@ class Api {
     }
     let filepath
     let mod
-    this.fsLib.readdirSync(searchDir).forEach(fileInDir => {
+    await Promise.all(this.fsLib.readdirSync(searchDir).map(async fileInDir => {
       filepath = this.pathLib.join(searchDir, fileInDir)
       if (opts.extensions.indexOf(this.pathLib.extname(fileInDir)) !== -1 && this._modulesSeen.indexOf(filepath) === -1) {
         this._modulesSeen.push(filepath)
-        mod = require(filepath)
+        // mod = require(filepath)
+        mod = await import(filepath);
         if (mod.flags || mod.aliases) {
           this._internalCommand(mod)
         } else if (typeof mod === 'function') {
@@ -337,7 +338,7 @@ class Api {
           })
         }
       }
-    })
+    }));
     return this
   }
 
